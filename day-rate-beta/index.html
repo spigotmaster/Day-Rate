@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day Rate</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Day Rate">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f4fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12101f" media="(prefers-color-scheme: dark)">
+<style>
+:root{box-sizing:border-box;--bg:#f6f4fb;--fg:#1d1a33;--mut:#625e7a;--line:#cfcae2;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;color-scheme:dark}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+#app{height:100%;display:flex;flex-direction:column}
+.view{flex:1;display:none;flex-direction:column;min-height:0}
+.view.on{display:flex}
+nav{display:flex;border-top:1px solid var(--line)}
+nav button{flex:1;min-height:52px;background:none;border:0;color:var(--mut);font:inherit;font-weight:700}
+nav button.on{color:var(--fg)}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:72px 24px 24px;position:relative;touch-action:none;user-select:none;-webkit-user-select:none;transition:background .2s}
+.top{position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between}
+.dots{display:flex;gap:8px;margin-right:12px}
+.dots i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;opacity:.5}
+.dots i.on{background:currentColor;opacity:1}
+.q{font-size:1.45rem;font-weight:700}
+.def{opacity:.9;max-width:28ch}
+.numwrap{position:relative;width:min(70vw,280px);aspect-ratio:1;display:grid;place-items:center;margin:8px 0}
+.ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:289;stroke-dashoffset:289}
+.num{font-size:min(34vw,150px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;outline:none}
+.ctl{display:flex;gap:12px;align-items:center}
+.btn{min-height:44px;min-width:44px;padding:0 18px;border-radius:22px;border:1.5px solid currentColor;background:transparent;color:inherit;font:inherit;font-weight:700}
+.btn:focus-visible,.cell:focus-visible,.num:focus-visible,#note:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+.hint{font-size:.9rem;opacity:.85;margin-top:6px}
+.score{font-size:min(22vw,96px);font-weight:800;line-height:1}
+.score small{font-size:.35em;font-weight:700;opacity:.85}
+.rdate{font-weight:700;opacity:.9}
+.trio{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.trio div{font-size:1.1rem}
+.trio b{font-size:1.5rem;display:block}
+.trio small{opacity:.85;font-size:.8rem}
+#note{width:min(100%,360px);background:transparent;border:0;border-bottom:1.5px solid currentColor;color:inherit;font:inherit;text-align:center;padding:8px;margin-top:10px;border-radius:0}
+#note::placeholder{color:inherit;opacity:.7}
+.rem{min-height:1.4em;opacity:.95}
+.hist{padding:20px 16px;overflow:auto}
+.hist h1{font-size:1.5rem;margin:0 0 4px}
+.sum{color:var(--mut);margin:0 0 16px}
+.gw{overflow-x:auto;padding-bottom:8px}
+.grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,26px);grid-auto-columns:26px;gap:4px;width:max-content}
+.cell{border-radius:7px;border:1.5px solid var(--line);background:transparent;padding:0}
+.cell.f{visibility:hidden}
+.cell.sel{outline:2.5px solid var(--fg);outline-offset:1px}
+.legend{color:var(--mut);font-size:.9rem;margin:8px 0 16px}
+.det{border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.det .big{font-size:2rem;font-weight:800}
+.det .row{display:flex;gap:18px;margin:6px 0 10px;flex-wrap:wrap}
+.det .note{overflow-wrap:anywhere;margin:0 0 12px}
+.det .btn{color:var(--fg)}
+.pane{padding:20px 16px;overflow:auto}
+.pane h1{font-size:1.5rem;margin:0 0 12px}
+.seg{display:flex;gap:6px;margin:0 0 14px}
+.seg button{flex:1;min-height:44px;border-radius:22px;border:1.5px solid var(--line);background:transparent;color:var(--fg);font:inherit;font-weight:700}
+.seg button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--mut);font-size:9px;font-family:inherit}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke:var(--fg);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart circle{stroke:var(--bg);stroke-width:1.5}
+.card{border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}
+.card h2{font-size:1.05rem;margin:0 0 6px}
+.card p{margin:0 0 10px;color:var(--mut)}
+.card .btn{color:var(--fg);margin:0 8px 8px 0}
+.row2{display:flex;align-items:center;gap:10px;min-height:44px}
+.row2 input{width:24px;height:24px}
+.banner{border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.banner[hidden]{display:none}
+.banner .btn{color:var(--fg)}
+@media (prefers-reduced-motion:reduce){.stage{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+ <section class="view" id="vrate">
+  <div class="stage" id="st">
+   <div class="top"><button class="btn" id="back">Cancel</button><div class="dots" id="dots"><i></i><i></i><i></i></div></div>
+   <div class="q" id="q"></div>
+   <div class="def" id="def"></div>
+   <div class="numwrap">
+    <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle id="ringc" cx="50" cy="50" r="46"/></svg>
+    <div class="num" id="num" role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="10"></div>
+   </div>
+   <div class="ctl"><button class="btn" id="minus" aria-label="Lower rating">−</button><button class="btn" id="lock">Lock in</button><button class="btn" id="plus" aria-label="Raise rating">+</button></div>
+   <div class="hint">Drag up or down, then hold still to lock</div>
+  </div>
+ </section>
+ <section class="view" id="vres">
+  <div class="stage" id="rs" style="touch-action:auto">
+   <div class="rdate" id="rdate"></div>
+   <div class="score" id="score"></div>
+   <div class="trio" id="trio"></div>
+   <input id="note" maxlength="140" placeholder="One line about today (optional)" aria-label="Note for this day">
+   <div class="rem" id="rem"></div>
+   <div id="bye"></div><button class="btn" id="bk" hidden>Back up your data</button>
+   <button class="btn" id="edit">Edit ratings</button>
+  </div>
+ </section>
+ <section class="view" id="vhist">
+  <div class="hist">
+   <h1>History</h1>
+   <p class="sum" id="sum"></p>
+   <div class="gw" id="gw"><div class="grid" id="grid"></div></div>
+   <p class="legend">Colored: rated. Outline: not rated yet. Tap any day.</p>
+   <div class="det" id="det"></div>
+  </div>
+ </section>
+  <section class="view" id="vtr"><div class="pane">
+  <h1>Trends</h1>
+  <div class="seg" id="seg" role="group" aria-label="Range"><button data-r="14" class="on">2 weeks</button><button data-r="30">Month</button><button data-r="365">Year</button></div>
+  <svg class="chart" id="chart" viewBox="0 0 340 210" role="img" aria-label="Weighted score over time"></svg>
+  <p class="sum" id="trsum"></p>
+ </div></section>
+ <section class="view" id="vdata"><div class="pane">
+  <h1>Data</h1>
+  <div class="card"><h2>Export</h2><p id="lastbk"></p><button class="btn" id="xcsv">Export CSV</button><button class="btn" id="xjson">Backup file</button><button class="btn" id="xcopy">Copy backup text</button></div>
+  <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
+  <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
+  <div class="card"><h2>Settings</h2><label class="row2"><input type="checkbox" id="hapt"> Haptics (may not work on every iPhone)</label><p id="stor"></p></div>
+  <p class="sum" id="ver"></p>
+ </div></section>
+ <div class="banner" id="upd" hidden><span>Update ready.</span><button class="btn" id="updbtn">Tap to update</button></div>
+ <nav id="nav"><button id="nt" class="on">Today</button><button id="nh">History</button><button id="ntr">Trends</button><button id="nd">Data</button></nav>
+</div>
+<label id="hap" style="position:absolute;opacity:0;pointer-events:none;left:-99px"><input type="checkbox" switch></label>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='dayrate:v1';
+let E={};
+try{E=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){E={}}
+function save(){recalc();try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
+const ls=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+let META={haptics:true},curView='res';
+try{Object.assign(META,JSON.parse(ls('dayrate:meta'))||{})}catch(e){}
+const saveMeta=()=>{try{localStorage.setItem('dayrate:meta',JSON.stringify(META))}catch(e){}};
+const overdue=()=>Object.keys(E).length>0&&(!META.lastBackup||Date.now()-META.lastBackup>7*864e5);
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const today=()=>ds(new Date(Date.now()-4*36e5));
+/*SCORE*/
+let STATS={};
+function recalc(){const s={m:[11,0],p:[11,0],c:[11,0]};for(const k in E){const e=E[k];for(const d of ['m','p','c']){if(e[d]<s[d][0])s[d][0]=e[d];if(e[d]>s[d][1])s[d][1]=e[d]}}STATS=s}
+const comp=(e,d)=>{const lo=STATS[d][0],b=STATS[d][1]-lo;return b>0?Math.floor((1000*(e[d]-lo)+b)/(2*b)):250};
+const H=e=>comp(e,'m')+comp(e,'p')+comp(e,'c');
+recalc();
+/*END*/
+const fmt=h=>(Math.floor((h+5)/10)/10).toFixed(1);
+const tOf=h=>h/1500;
+const STOPS=[[0,[46,42,110]],[.35,[31,122,140]],[.7,[232,162,58]],[1,[245,200,76]]];
+function col(t){t=Math.max(0,Math.min(1,t));for(let i=1;i<4;i++){if(t<=STOPS[i][0]){const[a,A]=STOPS[i-1],[b,B]=STOPS[i],f=(t-a)/(b-a);return A.map((v,j)=>Math.round(v+(B[j]-v)*f))}}return STOPS[3][1]}
+function textOn(c){return (.2126*c[0]+.7152*c[1]+.0722*c[2])/255>.55?'#1d1a33':'#ffffff'}
+function paint(el,t){const c=col(t);el.style.background='rgb('+c+')';el.style.color=textOn(c)}
+const label=s=>parse(s).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* haptics: unverified on iOS Safari; falls back silently */
+const hap=$('#hap');
+function tick(){if(!META.haptics)return;try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}try{hap.click()}catch(e){}}
+function buzz(n){for(let i=0;i<n;i++)setTimeout(tick,i*70)}
+
+function show(name){
+ curView=name;
+ ['rate','res','hist','tr','data'].forEach(n=>$('#v'+n).classList.toggle('on',n===name));
+ $('#nav').style.display=name==='rate'?'none':'flex';
+ const tab={res:'nt',hist:'nh',tr:'ntr',data:'nd'}[name];
+ ['nt','nh','ntr','nd'].forEach(i=>$('#'+i).classList.toggle('on',i===tab));
+ if(name==='hist')renderHist();
+ if(name==='tr')renderTrend();
+ if(name==='data')renderData();
+ updBanner();
+}
+
+/* rating flow */
+const DIM=[
+ {k:'m',q:'How did today feel?',d:'How the day felt overall'},
+ {k:'p',q:'How productive was today?',d:'Did you get done what mattered?'},
+ {k:'c',q:'How connected did you feel?',d:'How close you felt to people, in person or remote'}
+];
+let step=0,vals=[5,5,5],target=null,down=false,startY=0,startV=5,lastY=0,holdT=0,raf=0;
+const C=289;
+function startRate(date){target=date;const e=E[date];vals=e?[e.m,e.p,e.c]:[5,5,5];step=0;renderStep();show('rate')}
+function renderStep(){
+ const d=DIM[step];
+ $('#q').textContent=d.q;$('#def').textContent=d.d;
+ $('#back').textContent=step?'Back':'Cancel';
+ [...$('#dots').children].forEach((x,i)=>x.classList.toggle('on',i<=step));
+ $('#ringc').style.strokeDashoffset=C;
+ renderNum();
+}
+function renderNum(){
+ const v=vals[step];
+ $('#num').textContent=v;
+ $('#num').setAttribute('aria-valuenow',v);
+ $('#num').setAttribute('aria-valuetext',DIM[step].k==='m'?'Mood '+v:DIM[step].k==='p'?'Productivity '+v:'Connection '+v);
+ paint($('#st'),(v-1)/9);
+}
+function setVal(v){v=Math.max(1,Math.min(10,v));if(v!==vals[step]){vals[step]=v;tick();renderNum()}}
+function loop(t){
+ if(!down)return;
+ const p=Math.min(1,(t-holdT)/600);
+ $('#ringc').style.strokeDashoffset=C*(1-p);
+ if(p>=1){down=false;lock();return}
+ raf=requestAnimationFrame(loop);
+}
+const st=$('#st');
+st.addEventListener('pointerdown',e=>{
+ if(e.target.closest('button'))return;
+ down=true;startY=lastY=e.clientY;startV=vals[step];holdT=performance.now();
+ try{st.setPointerCapture(e.pointerId)}catch(x){}
+ cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+});
+st.addEventListener('pointermove',e=>{
+ if(!down)return;
+ setVal(Math.round(startV+(startY-e.clientY)/(innerHeight*.08)));
+ if(Math.abs(e.clientY-lastY)>3){lastY=e.clientY;holdT=performance.now();$('#ringc').style.strokeDashoffset=C}
+});
+['pointerup','pointercancel'].forEach(ev=>st.addEventListener(ev,()=>{down=false;$('#ringc').style.strokeDashoffset=C}));
+$('#minus').onclick=()=>setVal(vals[step]-1);
+$('#plus').onclick=()=>setVal(vals[step]+1);
+$('#lock').onclick=()=>lock();
+$('#num').addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'){e.preventDefault();setVal(vals[step]+1)}if(e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();setVal(vals[step]-1)}});
+$('#back').onclick=()=>{if(step>0){step--;renderStep()}else home()};
+function lock(){
+ down=false;
+ if(!reduce)st.animate([{transform:'scale(1)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],{duration:400,easing:'ease-in-out'});
+ if(step<2){buzz(1);step++;renderStep();return}
+ const old=E[target]||{};
+ const e={m:vals[0],p:vals[1],c:vals[2],note:old.note||'',created:old.created||Date.now(),updated:Date.now()};
+ E[target]=e;save();
+ const t=tOf(H(e));buzz(t<.33?1:t<.66?2:3);
+ showResult(target);
+}
+
+/* result */
+function remember(date){
+ const [y,m,d]=date.split('-').map(Number);
+ const ya=y-1+'-'+pad(m)+'-'+pad(d);
+ if(E[ya])return ['This day last year',E[ya]];
+ const pm=m===1?[y-1,12]:[y,m-1];
+ const dt=new Date(pm[0],pm[1]-1,d);
+ if(dt.getMonth()===pm[1]-1){const k=ds(dt);if(E[k])return ['This day last month',E[k]]}
+ return null;
+}
+function showResult(date){
+ const e=E[date],h=H(e);
+ paint($('#rs'),tOf(h));
+ $('#rdate').textContent=date===today()?'Today':label(date);
+ $('#score').innerHTML=fmt(h)+' <small>/ 15</small>';
+ const pt=d=>fmt(comp(e,d))+' / 5';
+ $('#trio').innerHTML='<div><b>'+e.m+'</b>Mood<br><small>'+pt('m')+'</small></div><div><b>'+e.p+'</b>Productivity<br><small>'+pt('p')+'</small></div><div><b>'+e.c+'</b>Connection<br><small>'+pt('c')+'</small></div>';
+ const n=$('#note');n.value=e.note||'';
+ n.oninput=()=>{E[date].note=n.value;save()};
+ const r=remember(date);
+ $('#rem').textContent=r?r[0]+': '+fmt(H(r[1]))+(r[1].note?' · '+r[1].note.slice(0,60):''):'';
+ $('#bye').textContent=date===today()?'See you tomorrow.':'';
+ const bk=$('#bk');bk.hidden=!overdue();bk.onclick=()=>show('data');
+ $('#edit').onclick=()=>startRate(date);
+ show('res');
+}
+function home(){const t=today();E[t]?showResult(t):startRate(t)}
+
+/* history */
+let sel=null;
+function renderHist(){
+ const t=today(),td=parse(t),keys=Object.keys(E).sort();
+ const first=keys.length?parse(keys[0]):td;
+ const minD=new Date(td.getFullYear(),td.getMonth(),td.getDate()-77);
+ const s0=first<minD?first:minD;
+ const start=new Date(s0.getFullYear(),s0.getMonth(),s0.getDate()-((s0.getDay()+6)%7));
+ const endMon=new Date(td.getFullYear(),td.getMonth(),td.getDate()-((td.getDay()+6)%7));
+ const days=Math.round((endMon-start)/864e5)+7;
+ const g=$('#grid');g.innerHTML='';
+ for(let i=0;i<days;i++){
+  const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),k=ds(d);
+  const b=document.createElement('button');b.className='cell';b.dataset.d=k;
+  if(k>t)b.classList.add('f');
+  else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k])))}
+  else b.setAttribute('aria-label',label(k)+', not rated');
+  if(k===(sel||t))b.classList.add('sel');
+  b.onclick=()=>{sel=k;renderHist()};
+  g.appendChild(b);
+ }
+ const hs=keys.map(k=>H(E[k]));
+ $('#sum').textContent=keys.length?keys.length+(keys.length===1?' day':' days')+' rated · average '+fmt(Math.round(hs.reduce((a,b)=>a+b,0)/hs.length))+' / 15':'No days rated yet';
+ $('#gw').scrollLeft=1e6;
+ renderDet(sel||t,t);
+}
+function renderDet(k,t){
+ const d=$('#det'),e=E[k];d.innerHTML='';
+ const h=document.createElement('div');h.className='rdate';h.textContent=label(k);d.appendChild(h);
+ if(e){
+  const b=document.createElement('div');b.className='big';b.textContent=fmt(H(e))+' / 15';d.appendChild(b);
+  const r=document.createElement('div');r.className='row';r.innerHTML='<span>Mood '+e.m+' ('+fmt(comp(e,'m'))+'/5)</span><span>Productivity '+e.p+' ('+fmt(comp(e,'p'))+'/5)</span><span>Connection '+e.c+' ('+fmt(comp(e,'c'))+'/5)</span>';d.appendChild(r);
+  if(e.note){const n=document.createElement('p');n.className='note';n.textContent=e.note;d.appendChild(n)}
+ }else{
+  const p=document.createElement('p');p.className='note';p.textContent=k>t?'This day has not happened yet.':'Not rated.';d.appendChild(p);
+ }
+ if(k<=t){const b=document.createElement('button');b.className='btn';b.textContent=e?'Edit ratings':'Rate this day';b.onclick=()=>startRate(k);d.appendChild(b)}
+}
+$('#nt').onclick=home;
+$('#nh').onclick=()=>{sel=null;show('hist')};
+$('#ntr').onclick=()=>show('tr');
+$('#nd').onclick=()=>show('data');
+
+/* trends */
+let range=14;
+$('#seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;range=+b.dataset.r;renderTrend()};
+function renderTrend(){
+ [...$('#seg').children].forEach(b=>b.classList.toggle('on',+b.dataset.r===range));
+ const td=parse(today()),W=340,Ht=210,L=28,R=8,T=10,B=26,pw=W-L-R,ph=Ht-T-B;
+ const day=i=>ds(new Date(td.getFullYear(),td.getMonth(),td.getDate()-i));
+ const step=range>60?7:1,n=Math.ceil(range/step),bs=[];
+ for(let b=0;b<n;b++){let s=0,c=0;for(let j=0;j<step;j++){const i=range-1-(b*step+j);if(i<0)continue;const e=E[day(i)];if(e){s+=H(e);c++}}bs.push(c?s/c:null)}
+ const X=b=>L+pw*b/(n-1),Y=h=>T+ph*(1-h/1500);
+ let g='',d='',dots='',prev=false;
+ [0,5,10,15].forEach(v=>{const y=Y(v*100);g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(L-5)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>'});
+ bs.forEach((h,b)=>{if(h==null){prev=false;return}d+=(prev?'L':'M')+X(b).toFixed(1)+' '+Y(h).toFixed(1);prev=true;dots+='<circle cx="'+X(b).toFixed(1)+'" cy="'+Y(h).toFixed(1)+'" r="'+(n>31?3:4.5)+'" fill="rgb('+col(tOf(h))+')"/>'});
+ const lab=i=>parse(day(i)).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+ g+='<text x="'+L+'" y="'+(Ht-8)+'">'+lab(range-1)+'</text><text x="'+(L+pw/2)+'" y="'+(Ht-8)+'" text-anchor="middle">'+lab(Math.round((range-1)/2))+'</text><text x="'+(W-R)+'" y="'+(Ht-8)+'" text-anchor="end">Today</text>';
+ $('#chart').innerHTML=g+'<path class="ln" d="'+d+'"/>'+dots;
+ const v=[];for(let i=0;i<range;i++){const e=E[day(i)];if(e)v.push(H(e))}
+ $('#trsum').textContent=v.length?v.length+' of '+range+' days rated · average '+fmt(Math.round(v.reduce((a,b)=>a+b,0)/v.length))+' / 15 · best '+fmt(Math.max(...v))+' · lowest '+fmt(Math.min(...v))+(range>60?'. Weekly averages shown.':''):'No rated days in this range yet.';
+}
+
+/* data: export, backup, import */
+const canonOf=m=>JSON.stringify(Object.keys(m).sort().map(k=>[k,m[k].m,m[k].p,m[k].c,m[k].note||'']));
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function csv(){
+ const q=t=>{t=String(t||'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"'};
+ return '\ufeff'+['date,mood,productivity,connection,mood_pts,productivity_pts,connection_pts,score,note'].concat(Object.keys(E).sort().map(k=>{const e=E[k];return [k,e.m,e.p,e.c,fmt(comp(e,'m')),fmt(comp(e,'p')),fmt(comp(e,'c')),fmt(H(e)),q(e.note)].join(',')})).join('\r\n')+'\r\n';
+}
+async function backupText(){return JSON.stringify({app:'dayrate',version:1,exported_at:new Date().toISOString(),entries:E,checksum:await sha(canonOf(E))})}
+function markBackup(){META.lastBackup=Date.now();saveMeta();renderData()}
+async function deliver(name,text,type,after){
+ const f=new File([text],name,{type});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});after&&after();return}}catch(e){if(e&&e.name==='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(a.href),4000);after&&after();
+}
+$('#xcsv').onclick=()=>deliver('day-rate-'+today()+'.csv',csv(),'text/csv');
+$('#xjson').onclick=async()=>deliver('day-rate-backup-'+today()+'.json',await backupText(),'application/json',markBackup);
+$('#xcopy').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(await backupText());markBackup();b.textContent='Copied'}catch(x){b.textContent='Copy failed'}setTimeout(()=>b.textContent='Copy backup text',2000)};
+$('#ximp').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f)importText(await f.text())};
+async function importText(t){
+ let o;try{o=JSON.parse(t)}catch(e){return alert('That file is not valid JSON. Nothing changed.')}
+ if(!o||o.app!=='dayrate'||!o.entries||typeof o.entries!=='object')return alert('That is not a Day Rate backup. Nothing changed.');
+ if(o.version>1)return alert('This backup is from a newer version. Update the app first. Nothing changed.');
+ const ent={};
+ for(const k of Object.keys(o.entries)){const e=o.entries[k];if(!/^\d{4}-\d\d-\d\d$/.test(k)||!e||![e.m,e.p,e.c].every(v=>Number.isInteger(v)&&v>=1&&v<=10))return alert('The backup has an invalid entry. Nothing changed.');ent[k]={m:e.m,p:e.p,c:e.c,note:String(e.note||'').slice(0,140),created:e.created||Date.now(),updated:e.updated||Date.now()}}
+ if(await sha(canonOf(ent))!==o.checksum)return alert('Checksum does not match. The file was changed or damaged. Nothing changed.');
+ const ks=Object.keys(ent).sort();
+ if(!confirm('Replace '+Object.keys(E).length+' days on this device with '+ks.length+' days from the backup'+(ks.length?' ('+ks[0]+' to '+ks[ks.length-1]+')':'')+'? Data is replaced, not merged.'))return;
+ try{localStorage.setItem('dayrate:snap',JSON.stringify(E))}catch(e){}
+ E=ent;save();renderData();alert('Imported '+ks.length+' days.');
+}
+$('#xundo').onclick=()=>{try{const sn=JSON.parse(ls('dayrate:snap'));if(sn&&confirm('Restore the data from before the last import?')){E=sn;save();localStorage.removeItem('dayrate:snap');renderData()}}catch(e){}};
+$('#hapt').onchange=e=>{META.haptics=e.target.checked;saveMeta()};
+function renderData(){
+ $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
+ $('#hapt').checked=META.haptics;
+ $('#xundo').hidden=!ls('dayrate:snap');
+ $('#ver').textContent='Day Rate beta 0.2 · '+Object.keys(E).length+' days stored on this device only';
+ try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
+}
+
+/* offline + updates */
+let waiting=null,asked=false;
+function updBanner(){$('#upd').hidden=!(waiting&&curView!=='rate')}
+$('#updbtn').onclick=()=>{if(waiting){asked=true;waiting.postMessage('skip')}};
+if('serviceWorker' in navigator&&location.protocol==='https:'){
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(asked)location.reload()});
+ navigator.serviceWorker.register('sw.js').then(r=>{
+  const chk=()=>{if(r.waiting&&navigator.serviceWorker.controller){waiting=r.waiting;updBanner()}};
+  chk();
+  r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed')chk()})});
+  r.update().catch(()=>{});
+ }).catch(()=>{});
+}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+home();
+</script>
+</body>
+</html>
