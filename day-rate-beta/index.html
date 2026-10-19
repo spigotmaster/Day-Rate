@@ -82,6 +82,7 @@ nav button.on{color:var(--fg)}
 .banner{border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 .banner[hidden]{display:none}
 .banner .btn{color:var(--fg)}
+.cta{min-height:56px;padding:0 28px;font-size:1.1rem;background:var(--fg);color:var(--bg);border-color:var(--fg)}
 @media (prefers-reduced-motion:reduce){.stage{transition:none}}
 </style>
 </head>
@@ -98,6 +99,14 @@ nav button.on{color:var(--fg)}
    </div>
    <div class="ctl"><button class="btn" id="minus" aria-label="Lower rating">−</button><button class="btn" id="lock">Lock in</button><button class="btn" id="plus" aria-label="Raise rating">+</button></div>
    <div class="hint">Drag up or down, then hold still to lock</div>
+  </div>
+ </section>
+ <section class="view" id="vtoday">
+  <div class="stage" style="touch-action:auto;padding-top:24px">
+   <div class="q">Today isn’t rated yet</div>
+   <p class="def" id="tsum"></p>
+   <button class="btn cta" id="rateNow">Rate today</button>
+   <div class="hint">No rush. History, Trends and Data are in the bar below.</div>
   </div>
  </section>
  <section class="view" id="vres">
@@ -176,9 +185,9 @@ function buzz(n){for(let i=0;i<n;i++)setTimeout(tick,i*70)}
 
 function show(name){
  curView=name;
- ['rate','res','hist','tr','data'].forEach(n=>$('#v'+n).classList.toggle('on',n===name));
+ ['rate','today','res','hist','tr','data'].forEach(n=>$('#v'+n).classList.toggle('on',n===name));
  $('#nav').style.display=name==='rate'?'none':'flex';
- const tab={res:'nt',hist:'nh',tr:'ntr',data:'nd'}[name];
+ const tab={today:'nt',res:'nt',hist:'nh',tr:'ntr',data:'nd'}[name];
  ['nt','nh','ntr','nd'].forEach(i=>$('#'+i).classList.toggle('on',i===tab));
  if(name==='hist')renderHist();
  if(name==='tr')renderTrend();
@@ -273,7 +282,13 @@ function showResult(date){
  $('#edit').onclick=()=>startRate(date);
  show('res');
 }
-function home(){const t=today();E[t]?showResult(t):startRate(t)}
+function home(){const t=today();E[t]?showResult(t):showToday()}
+function showToday(){
+ const ks=Object.keys(E).sort(),n=ks.length;
+ $('#tsum').textContent=n?'Last rated '+parse(ks[n-1]).toLocaleDateString(undefined,{day:'numeric',month:'short'})+': '+fmt(H(E[ks[n-1]]))+' / 15. '+n+(n===1?' day':' days')+' so far, average '+fmt(Math.round(ks.reduce((a,k)=>a+H(E[k]),0)/n))+' / 15.':'No days rated yet. Your first rating takes about five seconds.';
+ $('#rateNow').onclick=()=>startRate(today());
+ show('today');
+}
 
 /* history */
 let sel=null;
@@ -376,7 +391,7 @@ function renderData(){
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#hapt').checked=META.haptics;
  $('#xundo').hidden=!ls('dayrate:snap');
- $('#ver').textContent='Day Rate beta 0.2 · '+Object.keys(E).length+' days stored on this device only';
+ $('#ver').textContent='Day Rate beta 0.3 · '+Object.keys(E).length+' days stored on this device only';
  try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
 }
 

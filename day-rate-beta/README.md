@@ -1,4 +1,4 @@
-# Day Rate beta 0.2
+# Day Rate beta 0.3
 
 Static PWA. Files: index.html, manifest.json, sw.js, icon-192.png, icon-512.png, apple-touch-icon.png.
 
@@ -15,7 +15,7 @@ Static PWA. Files: index.html, manifest.json, sw.js, icon-192.png, icon-512.png,
 - Data lives only on the device. No sync, no server.
 
 ## Update
-Edit files, change CACHE name in sw.js (dayrate-v2 -> dayrate-v3), upload. Open the app: "Update ready" banner appears; tap it.
+Edit files, change CACHE name in sw.js (dayrate-v3 -> dayrate-v4), upload. Open the app: "Update ready" banner appears; tap it.
 
 ## Move data from another install
 Old install: Data > Backup file. New install: Data > Import backup.
