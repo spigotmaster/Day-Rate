@@ -83,6 +83,58 @@ nav button.on{color:var(--fg)}
 .banner[hidden]{display:none}
 .banner .btn{color:var(--fg)}
 .cta{min-height:56px;padding:0 28px;font-size:1.1rem;background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.seg.sm button{font-size:.92rem;padding:0 4px}
+@media (max-width:380px){nav button{font-size:.85rem}.seg.sm button{font-size:.82rem}}
+.tiles{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 14px}
+@media (min-width:640px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{border-radius:16px;padding:14px;display:grid;grid-template-columns:auto 1fr;column-gap:16px;row-gap:2px;align-items:center;border:1.5px solid transparent}
+.tile.none{border-color:var(--line)}
+.tile .nm{font-weight:700;grid-area:1/1}
+.tile .avg{font-size:2.6rem;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;grid-area:2/1}
+.tile .chg{font-size:.9rem;font-weight:700;grid-area:1/2;text-align:right}
+.tile .sub{font-size:.8rem;opacity:.85;grid-area:3/1/4/3;margin-top:4px}
+.tile svg{width:100%;height:34px;grid-area:2/2;overflow:visible}
+.tile svg polyline{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.lead{font-size:1.05rem;margin:0 0 14px}
+.chip{font-size:.75rem;font-weight:700;border:1.5px solid var(--line);border-radius:10px;padding:1px 8px;color:var(--mut);white-space:nowrap}
+.card.ins h2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card p.find{color:var(--fg)}
+.card .meta{font-size:.85rem;color:var(--mut);margin:8px 0 0}
+.card details{margin:4px 0 0}
+.card summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700;color:var(--mut)}
+.card summary:focus-visible,.hl:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+.card summary::before{content:'+';display:inline-block;width:1.2em;font-weight:800}
+.card details[open] summary::before{content:'\2212'}
+.card details p{margin:0 0 6px}
+.try{border-top:1px solid var(--line);padding-top:10px;margin-top:8px}
+.try p{margin:0 0 8px;color:var(--fg)}
+.cmp{display:grid;grid-template-columns:1fr auto auto auto;gap:6px 16px;font-size:.95rem;font-variant-numeric:tabular-nums;margin:8px 0 0}
+.cmp .h{color:var(--mut);font-size:.8rem;font-weight:700;text-align:right}
+.cmp .h:first-child{text-align:left}
+.cmp span:not(.h):not(:first-child),.cmp b{text-align:right}
+.brow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;margin:10px 0;font-size:.92rem}
+.brow .track{grid-column:1/-1}
+.brow .tx{font-variant-numeric:tabular-nums;color:var(--mut);font-size:.85rem;white-space:nowrap}
+.track{height:12px;border-radius:6px;border:1.5px solid var(--line);position:relative;overflow:hidden}
+.fill{position:absolute;top:0;bottom:0;left:0;background:var(--fg);opacity:.75}
+.track.corr:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--line)}
+.track.corr .fill{opacity:.8}
+.dist{margin:8px 0 0}
+.dist .dt{display:flex;justify-content:space-between;gap:10px;font-weight:700;font-size:.95rem}
+.dist .dt span{color:var(--mut);font-weight:400;font-variant-numeric:tabular-nums}
+.dist .d{font-size:.82rem;color:var(--mut);margin:2px 0 12px}
+.dist .track{margin-top:4px}
+.dd{display:flex;flex-direction:column;gap:8px;margin:8px 0 0}
+.dd div{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:.92rem}
+.dd b{min-width:4.5rem}
+.hl{display:block;width:100%;text-align:left;background:none;color:var(--fg);font:inherit;border:1.5px solid var(--line);border-radius:16px;padding:14px;margin:0 0 10px;min-height:44px}
+.hl b{display:block;margin-bottom:2px}
+.hl span{color:var(--mut);font-size:.92rem;display:block}
+.more{width:100%;margin:0 0 14px;color:var(--fg)}
+.fine{font-size:.85rem;color:var(--mut);margin:4px 0 20px}
+.chart.wk{margin:10px 0 0}
+.chart.wk text.v{fill:var(--fg);font-weight:700}
 @media (prefers-reduced-motion:reduce){.stage{transition:none}}
 </style>
 </head>
@@ -135,24 +187,33 @@ nav button.on{color:var(--fg)}
   <svg class="chart" id="chart" viewBox="0 0 340 210" role="img" aria-label="Weighted score over time"></svg>
   <p class="sum" id="trsum"></p>
  </div></section>
+  <section class="view" id="vins"><div class="pane">
+  <h1>Insights</h1>
+  <p class="sum" id="insSub"></p>
+  <div class="seg sm" id="insTabs" role="group" aria-label="Insight layer"><button data-t="over" class="on">Overview</button><button data-t="obs">Observe</button><button data-t="dis">Discover</button><button data-t="act">Act</button></div>
+  <div class="seg sm" id="insPer" role="group" aria-label="Period"><button data-p="7" class="on">Last 7 days</button><button data-p="30">Last 30 days</button></div>
+  <div id="insBody"></div>
+ </div></section>
  <section class="view" id="vdata"><div class="pane">
   <h1>Data</h1>
   <div class="card"><h2>Export</h2><p id="lastbk"></p><button class="btn" id="xcsv">Export CSV</button><button class="btn" id="xjson">Backup file</button><button class="btn" id="xcopy">Copy backup text</button></div>
   <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
   <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
+  <div class="card"><h2>How Insights work</h2><p>Insights use only the ratings stored on this device and are calculated here, with no account or server. They describe patterns in your own history and never prove what causes what. Summaries need 7 rated days, pattern insights need 14 days with all three ratings, and findings built on fewer than 30 days are marked preliminary. Notes are only scanned for a few everyday keywords such as walk, gym or friends.</p></div>
   <div class="card"><h2>Settings</h2><label class="row2"><input type="checkbox" id="hapt"> Haptics (may not work on every iPhone)</label><p id="stor"></p></div>
   <p class="sum" id="ver"></p>
  </div></section>
  <div class="banner" id="upd" hidden><span>Update ready.</span><button class="btn" id="updbtn">Tap to update</button></div>
- <nav id="nav"><button id="nt" class="on">Today</button><button id="nh">History</button><button id="ntr">Trends</button><button id="nd">Data</button></nav>
+ <nav id="nav"><button id="nt" class="on">Today</button><button id="nh">History</button><button id="ntr">Trends</button><button id="ni">Insights</button><button id="nd">Data</button></nav>
 </div>
 <label id="hap" style="position:absolute;opacity:0;pointer-events:none;left:-99px"><input type="checkbox" switch></label>
+<script src="insights.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const KEY='dayrate:v1';
 let E={};
 try{E=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){E={}}
-function save(){recalc();try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}}
+function save(){recalc();try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){}if(curView==='ins')renderInsights()}
 const ls=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 let META={haptics:true},curView='res';
 try{Object.assign(META,JSON.parse(ls('dayrate:meta'))||{})}catch(e){}
@@ -185,12 +246,13 @@ function buzz(n){for(let i=0;i<n;i++)setTimeout(tick,i*70)}
 
 function show(name){
  curView=name;
- ['rate','today','res','hist','tr','data'].forEach(n=>$('#v'+n).classList.toggle('on',n===name));
+ ['rate','today','res','hist','tr','ins','data'].forEach(n=>$('#v'+n).classList.toggle('on',n===name));
  $('#nav').style.display=name==='rate'?'none':'flex';
- const tab={today:'nt',res:'nt',hist:'nh',tr:'ntr',data:'nd'}[name];
- ['nt','nh','ntr','nd'].forEach(i=>$('#'+i).classList.toggle('on',i===tab));
+ const tab={today:'nt',res:'nt',hist:'nh',tr:'ntr',ins:'ni',data:'nd'}[name];
+ ['nt','nh','ntr','ni','nd'].forEach(i=>$('#'+i).classList.toggle('on',i===tab));
  if(name==='hist')renderHist();
  if(name==='tr')renderTrend();
+ if(name==='ins')renderInsights();
  if(name==='data')renderData();
  updBanner();
 }
@@ -331,6 +393,7 @@ function renderDet(k,t){
 $('#nt').onclick=home;
 $('#nh').onclick=()=>{sel=null;show('hist')};
 $('#ntr').onclick=()=>show('tr');
+$('#ni').onclick=()=>show('ins');
 $('#nd').onclick=()=>show('data');
 
 /* trends */
@@ -351,6 +414,168 @@ function renderTrend(){
  $('#chart').innerHTML=g+'<path class="ln" d="'+d+'"/>'+dots;
  const v=[];for(let i=0;i<range;i++){const e=E[day(i)];if(e)v.push(H(e))}
  $('#trsum').textContent=v.length?v.length+' of '+range+' days rated · average '+fmt(Math.round(v.reduce((a,b)=>a+b,0)/v.length))+' / 15 · best '+fmt(Math.max(...v))+' · lowest '+fmt(Math.min(...v))+(range>60?'. Weekly averages shown.':''):'No rated days in this range yet.';
+}
+
+
+/* insights UI: all numbers come from insights.js; this block only draws them */
+let insTab='over',insPer=7;const insMore={obs:false,dis:false},INS_LIMIT=4;
+const mkEl=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const n1=v=>v==null?'\u2013':(Math.round(v*10)/10).toFixed(1);
+const sg=v=>v==null?'\u2013':Math.abs(v)<.05?'0.0':(v>0?'+':'\u2212')+n1(Math.abs(v));
+const rate=v=>'rgb('+col((v-1)/9)+')';
+function insData(){return DayRateInsights.analyze(E,today(),{period:insPer,score:r=>E[r.date]?H(E[r.date])/100:null})}
+$('#insTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;insTab=b.dataset.t;renderInsights();$('#vins .pane').scrollTop=0};
+$('#insPer').onclick=e=>{const b=e.target.closest('button');if(!b)return;insPer=+b.dataset.p;renderInsights()};
+function msgCard(title,text,extra){const c=mkEl('div','card');c.appendChild(mkEl('h2',null,title));c.appendChild(mkEl('p',null,text));if(extra)c.appendChild(extra);return c}
+function spark(series){
+ const L=series.length,X=i=>L>1?i*100/(L-1):50,Y=v=>28-(v-1)/9*26;
+ let g='',run=[];
+ const flush=()=>{if(run.length>1)g+='<polyline points="'+run.join(' ')+'"/>';else if(run.length===1){const[x,y]=run[0].split(',');g+='<polyline points="'+x+','+y+' '+(+x+.01)+','+y+'"/>'}run=[]};
+ series.forEach((p,i)=>{if(p.v==null)flush();else run.push(X(i).toFixed(1)+','+Y(p.v).toFixed(1))});flush();
+ const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ s.setAttribute('viewBox','0 0 100 30');s.setAttribute('preserveAspectRatio','none');s.setAttribute('aria-hidden','true');s.innerHTML=g;return s;
+}
+function chartEl(ch){
+ if(ch.type==='compare'){
+  const g=mkEl('div','cmp');['',...ch.heads].forEach(t=>g.appendChild(mkEl('span','h',t)));
+  ch.rows.forEach(r=>{g.appendChild(mkEl('span',null,r.label));g.appendChild(mkEl('b',null,n1(r.a)));g.appendChild(mkEl('span',null,n1(r.b)));g.appendChild(mkEl('span',null,sg(r.delta)))});
+  return g;
+ }
+ if(ch.type==='bars'||ch.type==='corr'){
+  const w=mkEl('div');
+  ch.rows.forEach(r=>{
+   const row=mkEl('div','brow');row.appendChild(mkEl('span',null,r.label));
+   const tr=mkEl('div','track'+(ch.type==='corr'?' corr':'')),f=mkEl('div','fill');
+   if(ch.type==='corr'){if(r.r!=null){const wd=Math.min(1,Math.abs(r.r))*50;f.style.width=wd+'%';f.style.left=r.r>=0?'50%':(50-wd)+'%'}}
+   else f.style.width=Math.max(0,Math.min(100,(r.value||0)/ch.max*100))+'%';
+   tr.appendChild(f);row.appendChild(mkEl('span','tx',r.text));row.appendChild(tr);w.appendChild(row);
+  });
+  return w;
+ }
+ if(ch.type==='dist'){
+  const w=mkEl('div','dist'),mx=Math.max(...ch.rows.map(r=>r.n));
+  ch.rows.forEach(r=>{
+   const top=mkEl('div','dt',r.label);top.appendChild(mkEl('span',null,r.n+(r.n===1?' day':' days')+' ('+r.pct+'%)'));
+   const tr=mkEl('div','track'),f=mkEl('div','fill');f.style.width=(r.n/mx*100)+'%';tr.appendChild(f);
+   w.appendChild(top);w.appendChild(tr);w.appendChild(mkEl('div','d',r.desc));
+  });
+  return w;
+ }
+ if(ch.type==='days'){
+  const w=mkEl('div','dd');
+  ch.rows.forEach(r=>{
+   const d=mkEl('div');d.appendChild(mkEl('b',null,r.tag));d.appendChild(mkEl('span',null,r.label));
+   d.appendChild(mkEl('span',null,'Mood '+r.m+', productivity '+r.p+', connection '+r.c));w.appendChild(d);
+  });
+  return w;
+ }
+ if(ch.type==='weekday'){
+  const W=340,Hh=150,bw=(W-12)/7;let g='<line class="gl" x1="6" x2="334" y1="108" y2="108"/>';
+  ch.rows.forEach((r,i)=>{
+   const x=6+i*bw+bw*.15,w=bw*.7;
+   if(r.value!=null){const hh=r.value/10*90,y=108-hh;
+    g+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="4" fill="'+rate(r.value)+'" opacity="'+(r.solid?1:.35)+'" stroke="var(--line)" stroke-width="1"/>';
+    if(r.solid)g+='<text class="v" x="'+(x+w/2).toFixed(1)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle">'+n1(r.value)+'</text>';
+   }
+   g+='<text x="'+(x+w/2).toFixed(1)+'" y="124" text-anchor="middle">'+r.label+'</text><text x="'+(x+w/2).toFixed(1)+'" y="137" text-anchor="middle">'+(r.n?'n='+r.n:'')+'</text>';
+  });
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  s.setAttribute('class','chart wk');s.setAttribute('viewBox','0 0 340 '+Hh);s.setAttribute('role','img');
+  s.setAttribute('aria-label','Average overall rating by weekday: '+ch.rows.filter(r=>r.value!=null).map(r=>r.label+' '+n1(r.value)+(r.solid?'':' (too few days)')).join(', '));
+  s.innerHTML=g;return s;
+ }
+ return null;
+}
+function insCard(i){
+ const c=mkEl('div','card ins');c.id='ins-'+i.id;
+ const h=mkEl('h2',null,i.title);if(i.prelim)h.appendChild(mkEl('span','chip','Preliminary'));c.appendChild(h);
+ c.appendChild(mkEl('p','find',i.finding));
+ (i.lines||[]).forEach(l=>c.appendChild(mkEl('p',null,l)));
+ if(i.chart){const ch=chartEl(i.chart);if(ch)c.appendChild(ch)}
+ c.appendChild(mkEl('div','meta',[i.period,i.nLabel].filter(Boolean).join(' \u00b7 ')));
+ if(i.why){const d=mkEl('details');d.appendChild(mkEl('summary',null,'Why this matters'));d.appendChild(mkEl('p',null,i.why));c.appendChild(d)}
+ if(i.actionId){
+  const t=mkEl('div','try');t.appendChild(mkEl('p',null,'Optional experiment: '+i.actionText));
+  const b=mkEl('button','btn','See experiment');b.onclick=()=>{insTab='act';renderInsights();$('#vins .pane').scrollTop=0};t.appendChild(b);c.appendChild(t);
+ }
+ return c;
+}
+function expCard(e){
+ const c=mkEl('div','card ins');const h=mkEl('h2',null,e.title);h.appendChild(mkEl('span','chip',e.starter?'Starter experiment':'Experiment'));c.appendChild(h);
+ c.appendChild(mkEl('p','find',e.text));
+ c.appendChild(mkEl('p',null,'Why this one: '+e.because));
+ c.appendChild(mkEl('div','meta',e.when+' \u00b7 optional'));
+ return c;
+}
+function cardList(body,items,key){
+ const show=insMore[key]?items:items.slice(0,INS_LIMIT);
+ show.forEach(i=>body.appendChild(insCard(i)));
+ if(items.length>INS_LIMIT){
+  const b=mkEl('button','btn more',insMore[key]?'Show fewer':'Show '+(items.length-INS_LIMIT)+' more');
+  b.onclick=()=>{insMore[key]=!insMore[key];renderInsights()};body.appendChild(b);
+ }
+}
+function renderOver(body,r){
+ const o=r.overview,sub=mkEl('p','sum',o.label+': '+o.daysRated+' of '+o.len+' days rated');
+ if(o.prelim){sub.appendChild(document.createTextNode(' '));sub.appendChild(mkEl('span','chip','Preliminary'))}
+ body.appendChild(sub);
+ body.appendChild(mkEl('p','lead',o.headline||'Not enough ratings in this period yet. Three rated days are needed to show an average.'));
+ const tiles=mkEl('div','tiles');
+ o.tiles.forEach(t=>{
+  const el=mkEl('div','tile'+(t.mean==null?' none':''));
+  if(t.mean!=null)paint(el,(t.mean-1)/9);
+  el.appendChild(mkEl('div','nm',t.name));
+  el.appendChild(mkEl('div','avg',n1(t.mean)));
+  el.appendChild(mkEl('div','chg',t.mean==null?'Needs 3 rated days':t.delta==null?'No earlier period to compare':t.trend==='same'?'About the same as before ('+n1(t.prevMean)+')':(t.delta>0?'Up ':'Down ')+n1(Math.abs(t.delta))+' from '+n1(t.prevMean)));
+  el.appendChild(spark(t.series));
+  el.appendChild(mkEl('div','sub',t.n+(t.n===1?' rating':' ratings')+' in '+o.len+' days'));
+  tiles.appendChild(el);
+ });
+ body.appendChild(tiles);
+ const all=r.observe.concat(r.discover),hl=r.highlights.map(id=>all.find(i=>i.id===id)).filter(Boolean);
+ if(hl.length){
+  const hh=mkEl('h2',null,'Worth a look');hh.style.cssText='font-size:1.05rem;margin:4px 0 8px';body.appendChild(hh);
+  hl.forEach(i=>{
+   const b=mkEl('button','hl');b.appendChild(mkEl('b',null,i.title));b.appendChild(mkEl('span',null,i.finding));
+   b.onclick=()=>{insTab=i.layer==='observe'?'obs':'dis';renderInsights();const t=document.getElementById('ins-'+i.id);if(t)t.scrollIntoView({block:'start'})};
+   body.appendChild(b);
+  });
+ }
+ if(r.empty.discover)body.appendChild(msgCard('Patterns are on their way',r.empty.discover));
+ body.appendChild(mkEl('p','fine','Insights compare you with your own history. They describe patterns, not causes.'));
+}
+function renderInsights(){
+ const body=$('#insBody');body.innerHTML='';
+ const tabs=$('#insTabs'),per=$('#insPer');
+ let r=null;
+ if(typeof DayRateInsights==='undefined'){tabs.style.display=per.style.display='none';$('#insSub').textContent='';body.appendChild(msgCard('Insights could not load','Close and reopen the app to refresh it. Your ratings are safe.'));return}
+ try{r=insData()}catch(e){tabs.style.display=per.style.display='none';body.appendChild(msgCard('Insights hit a problem','Your ratings are safe. Try reopening the app.'));return}
+ const st=r.status;
+ $('#insSub').textContent=st.total?st.total+(st.total===1?' day':' days')+' rated \u00b7 '+st.complete+' with all three ratings':'No days rated yet';
+ if(!st.ready){
+  tabs.style.display=per.style.display='none';
+  const tr=mkEl('div','track');tr.style.margin='0 0 10px';const f=mkEl('div','fill');f.style.width=Math.min(100,st.total/st.needTotal*100)+'%';tr.appendChild(f);
+  const go=mkEl('button','btn','Rate today');go.onclick=home;
+  const c=msgCard(st.total+' of '+st.needTotal+' days rated',r.empty.all);c.insertBefore(tr,c.children[1]);c.appendChild(go);body.appendChild(c);return;
+ }
+ tabs.style.display='flex';
+ [...tabs.children].forEach(b=>{const on=b.dataset.t===insTab;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ per.style.display=(insTab==='over'||insTab==='obs')?'flex':'none';
+ [...per.children].forEach(b=>{const on=+b.dataset.p===insPer;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ if(insTab==='over')renderOver(body,r);
+ else if(insTab==='obs'){
+  body.appendChild(mkEl('p','fine','What happened in your ratings.'));
+  if(r.observe.length)cardList(body,r.observe,'obs');else body.appendChild(msgCard('Not enough in this period','Rate a few more days in this period to see comparisons.'));
+ }else if(insTab==='dis'){
+  body.appendChild(mkEl('p','fine','Patterns across all your history. These are observations from your own ratings, not proof of cause.'));
+  if(r.empty.discover){
+   const tr=mkEl('div','track');tr.style.margin='0 0 10px';const f=mkEl('div','fill');f.style.width=Math.min(100,st.complete/st.needPairs*100)+'%';tr.appendChild(f);
+   const c=msgCard(st.complete+' of '+st.needPairs+' complete days',r.empty.discover);c.insertBefore(tr,c.children[1]);body.appendChild(c);
+  }else cardList(body,r.discover,'dis');
+ }else{
+  body.appendChild(mkEl('p','fine','Small experiments, based on your ratings. Ideas to explore, not advice or guaranteed ways to improve mood. Skip any that do not suit you.'));
+  r.act.forEach(e=>body.appendChild(expCard(e)));
+ }
 }
 
 /* data: export, backup, import */
@@ -391,7 +616,7 @@ function renderData(){
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#hapt').checked=META.haptics;
  $('#xundo').hidden=!ls('dayrate:snap');
- $('#ver').textContent='Day Rate beta 0.3 · '+Object.keys(E).length+' days stored on this device only';
+ $('#ver').textContent='Day Rate beta 0.4 · '+Object.keys(E).length+' days stored on this device only';
  try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
 }
 
