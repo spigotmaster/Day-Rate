@@ -163,6 +163,15 @@ nav button.on{color:var(--fg)}
 .wd .empty{stroke:currentColor;opacity:.3;stroke-dasharray:6 7;stroke-width:5}
 .wd:disabled{opacity:.4}
 .wd.now span{font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.yr{width:100%;height:auto;display:block;margin:0 0 6px;touch-action:manipulation}
+.yr text{fill:var(--mut);font-size:15px}
+.yr rect.ysel{stroke:var(--fg);stroke-width:2.5}
+.ylg{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--mut);margin:0 0 10px}
+.ylg i{flex:1;height:8px;border-radius:4px;max-width:160px}
+.expt{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:4px 8px;font-size:.9rem;margin:6px 0}
+.expt .h{color:var(--mut);font-size:.8rem}
+.expt .pri{font-weight:800}
+#rtime{font:inherit;color:inherit;background:transparent;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;margin-left:8px}
 .wd.sel{outline:2.5px solid currentColor;outline-offset:1px;border-radius:12px}
 .wd:focus-visible{outline:3px solid currentColor;outline-offset:2px;border-radius:12px}
 .hist .wk7{max-width:none}
@@ -238,9 +247,11 @@ nav button.on{color:var(--fg)}
   <div class="hist">
    <h1>History</h1>
    <p class="sum" id="sum"></p>
+   <div class="seg" id="hmode" role="group" aria-label="History view"><button data-m="wk" class="on" aria-pressed="true">Weeks</button><button data-m="yr" aria-pressed="false">Year</button></div>
    <div class="wk7" id="wk7"></div>
    <div id="wkrecap"></div>
    <div class="gw" id="gw"><div class="grid" id="grid"></div></div>
+   <div id="yrw" hidden><svg class="yr" id="yr" viewBox="0 0 640 104" role="img" aria-label="Year view. Each square is one day, coloured by score. Tap a square to open that day."></svg><div class="ylg" id="ylg"></div><p class="sum" id="yrsum"></p></div>
    <p class="legend">Colored: rated. Outline: not rated yet. Tap any day.</p>
    <div class="det" id="det"></div>
   </div>
@@ -267,7 +278,9 @@ nav button.on{color:var(--fg)}
   <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
   <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
   <div class="card"><h2>How Insights work</h2><p>Insights use only the ratings stored on this device and are calculated here, with no account or server. They describe patterns in your own history and never prove what causes what. Summaries need 7 rated days, pattern insights need 14 days with all three ratings, and findings built on fewer than 30 days are marked preliminary. Notes are only scanned for a few everyday keywords such as walk, gym or friends.</p></div>
+  <div class="card"><h2>Weekday baselines</h2><p>Once you have 8 weeks of days, with at least 6 of each weekday, &ldquo;usual&rdquo; means usual for that weekday, so a Monday is compared with other Mondays. Each weekday average is pulled toward your overall average until it rests on more days, which stops a few odd days from distorting it.</p></div>
   <div class="card"><h2>Research behind Insights</h2><p>Several insights are built on published studies. They describe groups of people, so Day Rate only checks whether the same pattern shows in your own ratings.</p><p>Progress and mood: Amabile and Kramer (2011). Happiness and output: Oswald, Proto and Sgroi (2015). Daily social contact: Sandstrom and Dunn (2014). Weekends: Helliwell and Wang (2014). Writing down good things: Seligman and colleagues (2005). A later replication found lasting happiness gains too, but a placebo exercise did as well.</p></div>
+  <div class="card"><h2>Daily reminder</h2><p>Day Rate cannot send notifications by itself on an iPhone, so use a repeating calendar event that links back here. Pick a time, add it to your calendar, then tap the link in the notification to open the app.</p><label class="row2">Time <input type="time" id="rtime" value="20:00"></label><button class="btn" id="rics">Add daily reminder to Calendar</button><p class="fine">Prefer Shortcuts? Make a Time of Day automation that runs Open App for Day Rate. You may need to turn off Ask Before Running.</p></div>
   <div class="card"><h2>Settings</h2><label class="row2"><input type="checkbox" id="hapt"> Haptics (may not work on every iPhone)</label><p id="stor"></p></div>
   <p class="sum" id="ver"></p>
  </div></section>
@@ -444,6 +457,7 @@ function dayLines(date,e,full){
  for(let i=1;i<=7;i++){const x=E[ds(new Date(t.getFullYear(),t.getMonth(),t.getDate()-i))];if(x)prev.push(x)}
  if(prev.length>=3){const a=(e.m+e.p+e.c)/3,b=prev.reduce((s,x)=>s+(x.m+x.p+x.c)/3,0)/prev.length,df=a-b;
   out.push(Math.abs(df)<.5?'In line with the 7 days before.':(Math.round(Math.abs(df)*10)/10).toFixed(1)+(df>0?' above':' below')+' the 7 days before.')}
+ if(full){expSync();const x=META.exp;if(x)out.push('Experiment day '+expDay(x)+' of '+EXPLEN+': '+x.title+'.');else if((META.expDone||[]).some(z=>z.new))out.push('Your experiment results are ready in Insights.')}
  if(full)out.push(n<7?(7-n)+(7-n===1?' more day':' more days')+' until Insights switch on.':n<14?(14-n)+(14-n===1?' more day':' more days')+' until pattern insights unlock.':n+' days in your record'+nextMile(n)+'.');
  return out;
 }
@@ -499,6 +513,36 @@ function resultWeek(date){
  weekStrip($('#rwk7'),date,true,k=>{sel=k;show('hist')},date);
  if(date===today()&&addD(monOf(date),6)===date)weekRecap($('#rwk'),monOf(date),true);else $('#rwk').innerHTML='';
 }
+let histMode='wk',YG=null;
+function markYear(){const r=$('#yr');if(r)r.querySelectorAll('rect').forEach(x=>x.classList.toggle('ysel',x.dataset.d===sel))}
+function renderYear(){
+ const t=today(),start=addD(monOf(t),-364),P=12,C=10,L=2,T=20,W=L+53*P,Hh=T+7*P,svg=$('#yr');
+ YG={P,L,T,W,Hh,start};svg.setAttribute('viewBox','0 0 '+W+' '+Hh);
+ let g='',lm=-1,n=0,tot=0;
+ for(let i=0;i<53;i++){
+  const d=parse(addD(start,i*7)),m=d.getMonth();
+  if(m!==lm&&d.getDate()<=7){lm=m;g+='<text x="'+(L+i*P)+'" y="13">'+d.toLocaleDateString(undefined,{month:'short'})+'</text>'}
+  for(let j=0;j<7;j++){const k=addD(start,i*7+j);if(k>t)continue;tot++;const e=E[k];if(e)n++;
+   g+='<rect data-d="'+k+'" x="'+(L+i*P)+'" y="'+(T+j*P)+'" width="'+C+'" height="'+C+'" rx="2" style="fill:'+(e?'rgb('+col(tOf(H(e)))+')':'var(--line)')+(e?'':';opacity:.45')+'"/>'}
+ }
+ svg.innerHTML=g;markYear();
+ $('#ylg').innerHTML='<span>Lower</span><i style="background:linear-gradient(90deg,rgb('+col(0)+'),rgb('+col(.5)+'),rgb('+col(1)+'))"></i><span>Higher</span>';
+ $('#yrsum').textContent=n+' of '+tot+' days rated in the last year';
+}
+function applyMode(){
+ [...$('#hmode').children].forEach(b=>{const on=b.dataset.m===histMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ $('#gw').hidden=histMode!=='wk';$('#yrw').hidden=histMode!=='yr';
+ if(histMode==='yr')renderYear();
+}
+$('#hmode').onclick=e=>{const b=e.target.closest('button');if(!b)return;histMode=b.dataset.m;applyMode()};
+$('#yr').onclick=e=>{
+ if(!YG)return;
+ const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*YG.W-YG.L,y=(e.clientY-r.top)/r.height*YG.Hh-YG.T,i=Math.floor(x/YG.P),j=Math.floor(y/YG.P);
+ if(i<0||i>=53||j<0||j>=7)return;
+ const k=addD(YG.start,i*7+j),t=today();if(k>t)return;
+ sel=k;renderDet(k,t);renderWeek();markYear();
+ $('#det').scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
+};
 const MILES=[7,14,30,50,100,150,200,365],MTITLE={7:'First week logged',14:'Two weeks in',30:'One month of days',50:'Fifty days',100:'One hundred days',150:'150 days',200:'200 days',365:'A full year'};
 let pendingMile=0;
 const milestone=n=>MILES.filter(x=>x<=n&&x>(META.mile||0)).pop()||0;
@@ -544,13 +588,13 @@ function renderHist(){
   else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k])))}
   else b.setAttribute('aria-label',label(k)+', not rated');
   if(k===(sel||t))b.classList.add('sel');
-  b.onclick=()=>{sel=k;const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();b.scrollIntoView({inline:'nearest',block:'nearest'})};
+  b.onclick=()=>{sel=k;const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();markYear();b.scrollIntoView({inline:'nearest',block:'nearest'})};
   g.appendChild(b);
  }
  const hs=keys.map(k=>H(E[k]));
  $('#sum').textContent=keys.length?keys.length+(keys.length===1?' day':' days')+' rated · average '+fmt(Math.round(hs.reduce((a,b)=>a+b,0)/hs.length))+' / 15':'No days rated yet';
  $('#gw').scrollLeft=1e6;const sc=g.querySelector('.sel');if(sel&&sc)sc.scrollIntoView({inline:'center',block:'nearest'});
- renderDet(sel||t,t);renderWeek();weekRecap($('#wkrecap'));
+ renderDet(sel||t,t);renderWeek();weekRecap($('#wkrecap'));applyMode();
 }
 function renderDet(k,t){
  const d=$('#det'),e=E[k],kd=parse(k);d.innerHTML='';
@@ -712,11 +756,50 @@ function insCard(i){
  }
  return c;
 }
+const EXPLEN=7,EXPDIM={social:'c',priority:'p',enjoy:'m'},ovr=e=>(e.m+e.p+e.c)/3;
+const expRows=(from,n)=>{const a=[];for(let i=0;i<n;i++){const e=E[addD(from,i)];if(e)a.push(e)}return a};
+const expDay=x=>Math.min(EXPLEN,Math.round((parse(today())-parse(x.start))/864e5)+1);
+function expResult(x){
+ const bs=expRows(addD(x.start,-EXPLEN),EXPLEN),as=expRows(x.start,EXPLEN),r={id:x.id,title:x.title,kind:x.kind,start:x.start,nb:bs.length,na:as.length};
+ if(bs.length<3||as.length<3){r.head='Not enough rated days to compare.';r.cav=['Experiments need at least 3 rated days in each week. You had '+bs.length+' before and '+as.length+' during.'];return r}
+ const avg=(a,f)=>a.reduce((t,e)=>t+f(e),0)/a.length,pd=EXPDIM[x.kind]||'o',NM={m:'Mood',p:'Productivity',c:'Connection',o:'Overall'};
+ r.rows=['m','p','c','o'].map(d=>{const f=d==='o'?ovr:e=>e[d],b=avg(bs,f),a=avg(as,f);return [NM[d],b,a,a-b,d===pd]});
+ const dl=r.rows.find(z=>z[4])[3],nm=NM[pd].toLowerCase()+(pd==='o'?' rating':''),all=Object.values(E).map(ovr);
+ const mu=all.reduce((t,v)=>t+v,0)/all.length,sdv=all.length>=7?Math.sqrt(all.reduce((t,v)=>t+(v-mu)*(v-mu),0)/(all.length-1)):null;
+ r.head=Math.abs(dl)>=.5?'Your '+nm+' averaged '+w1(Math.abs(dl))+' '+(dl>0?'higher':'lower')+' during the experiment.':'Your '+nm+' stayed about the same during the experiment.';
+ r.cav=['This compares one week with the week before. It cannot show that the experiment caused any change, and weeks differ for many reasons.'];
+ if(sdv!=null&&Math.abs(dl)<sdv)r.cav.push('A change this size is within your normal day-to-day ups and downs.');
+ r.cav.push('Rated days: '+bs.length+' before, '+as.length+' during.'+(bs.length<5||as.length<5?' Few rated days make this less reliable.':''));
+ return r;
+}
+function expSync(){
+ const x=META.exp;if(!x||today()<=addD(x.start,EXPLEN-1))return;
+ META.expDone=[Object.assign(expResult(x),{new:true})].concat(META.expDone||[]).slice(0,10);META.exp=null;saveMeta();
+}
+function expActiveCard(){
+ const x=META.exp,n=expDay(x),got=expRows(x.start,EXPLEN).length,c=mkEl('div','card ins'),h=mkEl('h2',null,x.title);
+ h.appendChild(mkEl('span','chip','In progress'));c.appendChild(h);c.appendChild(mkEl('p','find',x.text));
+ const tr=mkEl('div','track'),f=mkEl('div','fill');f.style.width=(n/EXPLEN*100)+'%';tr.appendChild(f);c.appendChild(tr);
+ c.appendChild(mkEl('div','meta','Day '+n+' of '+EXPLEN+' \u00b7 '+got+(got===1?' day':' days')+' rated \u00b7 ends '+rng(addD(x.start,EXPLEN-1))));
+ c.appendChild(mkEl('p','fine','Rate each day as usual. After the last day you will get a before-and-after comparison with the week before.'));
+ const b=mkEl('button','btn','Stop experiment');b.onclick=()=>{META.exp=null;saveMeta();renderInsights()};c.appendChild(b);
+ return c;
+}
+function expResultCard(x){
+ const c=mkEl('div','card ins'),h=mkEl('h2',null,x.title);h.appendChild(mkEl('span','chip','Result'));c.appendChild(h);c.appendChild(mkEl('p','find',x.head));
+ if(x.rows){const g=mkEl('div','expt');['','Before','During','Change'].forEach(t=>g.appendChild(mkEl('span','h',t)));
+  x.rows.forEach(r=>[r[0],w1(r[1]),w1(r[2]),(r[3]>0?'+':r[3]<0?'\u2212':'')+w1(Math.abs(r[3]))].forEach(t=>g.appendChild(mkEl('span',r[4]?'pri':null,t))));c.appendChild(g)}
+ x.cav.forEach(t=>c.appendChild(mkEl('p','fine',t)));
+ c.appendChild(mkEl('div','meta',rng(x.start)+' to '+rng(addD(x.start,EXPLEN-1))));
+ const b=mkEl('button','btn','Got it');b.onclick=()=>{x.new=false;saveMeta();renderInsights()};c.appendChild(b);
+ return c;
+}
 function expCard(e){
  const c=mkEl('div','card ins');const h=mkEl('h2',null,e.title);h.appendChild(mkEl('span','chip',e.starter?'Starter experiment':'Experiment'));c.appendChild(h);
  c.appendChild(mkEl('p','find',e.text));
  c.appendChild(mkEl('p',null,'Why this one: '+e.because));
  c.appendChild(mkEl('div','meta',e.when+' \u00b7 optional'));
+ if(!META.exp){const b=mkEl('button','btn','Start 7-day experiment');b.onclick=()=>{META.exp={id:e.id,kind:e.kind,title:e.title,text:e.text,start:today()};saveMeta();renderInsights()};c.appendChild(b)}
  return c;
 }
 function cardList(body,items,key){
@@ -763,7 +846,7 @@ function renderInsights(){
  if(typeof DayRateInsights==='undefined'){tabs.style.display=per.style.display='none';$('#insSub').textContent='';body.appendChild(msgCard('Insights could not load','Close and reopen the app to refresh it. Your ratings are safe.'));return}
  try{r=insData()}catch(e){tabs.style.display=per.style.display='none';body.appendChild(msgCard('Insights hit a problem','Your ratings are safe. Try reopening the app.'));return}
  const st=r.status;
- $('#insSub').textContent=st.total?st.total+(st.total===1?' day':' days')+' rated \u00b7 '+st.complete+' with all three ratings'+(st.ready&&r.endsOn&&r.endsOn!==today()?' \u00b7 windows end yesterday until you rate today':''):'No days rated yet';
+ $('#insSub').textContent=st.total?st.total+(st.total===1?' day':' days')+' rated \u00b7 '+st.complete+' with all three ratings'+(st.ready&&r.endsOn&&r.endsOn!==today()?' \u00b7 windows end yesterday until you rate today':'')+(r.adjusted?' \u00b7 weekday-adjusted baselines':''):'No days rated yet';
  if(!st.ready){
   tabs.style.display=per.style.display='none';
   const tr=mkEl('div','track');tr.style.margin='0 0 10px';const f=mkEl('div','fill');f.style.width=Math.min(100,st.total/st.needTotal*100)+'%';tr.appendChild(f);
@@ -786,7 +869,12 @@ function renderInsights(){
   }else cardList(body,r.discover,'dis');
  }else{
   body.appendChild(mkEl('p','fine','Small experiments, based on your ratings. Ideas to explore, not advice or guaranteed ways to improve mood. Skip any that do not suit you.'));
-  r.act.forEach(e=>body.appendChild(expCard(e)));
+  expSync();
+  (META.expDone||[]).filter(x=>x.new).forEach(x=>body.appendChild(expResultCard(x)));
+  if(META.exp)body.appendChild(expActiveCard());
+  r.act.filter(e=>!META.exp||e.id!==META.exp.id).forEach(e=>body.appendChild(expCard(e)));
+  const past=(META.expDone||[]).filter(x=>!x.new).slice(0,5);
+  if(past.length)body.appendChild(mkEl('p','fine','Past experiments: '+past.map(x=>x.title+' ('+rng(x.start)+')').join(' \u00b7 ')));
  }
 }
 
@@ -806,6 +894,15 @@ async function deliver(name,text,type,after){
  setTimeout(()=>URL.revokeObjectURL(a.href),4000);after&&after();
 }
 $('#xcsv').onclick=()=>deliver('day-rate-'+today()+'.csv',csv(),'text/csv');
+$('#rtime').value=META.remind||'20:00';
+$('#rtime').onchange=e=>{META.remind=e.target.value;saveMeta()};
+$('#rics').onclick=()=>{
+ const tm=($('#rtime').value||'20:00').split(':'),hh=tm[0].padStart(2,'0'),mm=(tm[1]||'00').padStart(2,'0'),d0=today().replace(/-/g,'');
+ const url=location.href.split('#')[0].split('?')[0],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+ const fold=l=>{let o='';while(l.length>74){o+=l.slice(0,74)+'\r\n ';l=l.slice(74)}return o+l};
+ const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Day Rate//Reminder//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:dayrate-reminder-'+d0+'@dayrate','DTSTAMP:'+stamp,'DTSTART:'+d0+'T'+hh+mm+'00','DURATION:PT15M','RRULE:FREQ=DAILY','SUMMARY:Rate your day','DESCRIPTION:Open Day Rate: '+url,'URL:'+url,'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Rate your day','END:VALARM','END:VEVENT','END:VCALENDAR'];
+ deliver('day-rate-reminder.ics',L.map(fold).join('\r\n')+'\r\n','text/calendar');
+};
 $('#xjson').onclick=async()=>deliver('day-rate-backup-'+today()+'.json',await backupText(),'application/json',markBackup);
 $('#xcopy').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(await backupText());markBackup();b.textContent='Copied'}catch(x){b.textContent='Copy failed'}setTimeout(()=>b.textContent='Copy backup text',2000)};
 $('#ximp').onclick=()=>$('#file').click();
@@ -828,7 +925,7 @@ function renderData(){
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#hapt').checked=META.haptics;
  $('#xundo').hidden=!ls('dayrate:snap');
- $('#ver').textContent='Day Rate beta 1.3 · '+Object.keys(E).length+' days stored on this device only';
+ $('#ver').textContent='Day Rate beta 1.7 · '+Object.keys(E).length+' days stored on this device only';
  try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
 }
 

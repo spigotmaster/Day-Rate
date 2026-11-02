@@ -21,6 +21,9 @@ const CFG={
  SAME:0.3,         // |change| below this (1-10 scale) is "about the same"
  MEANINGFUL:0.5,   // |change| at or above this is called out
  HIGH_Z:0.4,       // z-score for "above/below your usual"
+ ADJ_MIN:56,       // complete days needed before baselines are set per weekday
+ ADJ_PER_WD:6,     // and the fewest days needed on each weekday
+ ADJ_SHRINK:6,     // weekday averages are pulled toward the overall mean by this many days of weight
  CORR_NOTABLE:0.3, // |r| needed to describe a relationship
  RECENT:14,        // window for then-vs-now
  NOTE_GROUP:5      // days needed on each side of a note-theme comparison
@@ -117,11 +120,20 @@ function series(rows,today,len,d){
 }
 
 /* ---------- levels relative to the user's own history ---------- */
+/* Weekday-adjusted baselines: with enough weeks, "usual" means usual for that weekday, shrunk toward the overall mean so a few odd days cannot distort it. */
+function weekdayBase(comp,get){
+ if(comp.length<CFG.ADJ_MIN)return null;
+ const g=[[],[],[],[],[],[],[]];comp.forEach(r=>g[wdOf(r.date)].push(get(r)));
+ if(g.some(a=>a.length<CFG.ADJ_PER_WD))return null;
+ const gm=mean(comp.map(get)),m=g.map(a=>gm+(a.length/(a.length+CFG.ADJ_SHRINK))*(mean(a)-gm));
+ return {base:r=>m[wdOf(r.date)],sd:sd(comp.map(r=>get(r)-m[wdOf(r.date)]))||0};
+}
 function levelStats(rows){
- const st={};for(const d of DIMS){const v=rows.map(r=>r[d]);st[d]={mean:mean(v),sd:sd(v)||0}}
+ const st={};for(const d of DIMS){const v=rows.map(r=>r[d]),wb=weekdayBase(rows,r=>r[d]);st[d]={mean:mean(v),sd:wb?wb.sd:(sd(v)||0),wb}}
  return st;
 }
-const zOf=(r,d,st)=>st[d].sd>0?(r[d]-st[d].mean)/st[d].sd:0;
+const baseOf=(r,d,st)=>st[d].wb?st[d].wb.base(r):st[d].mean;
+const zOf=(r,d,st)=>st[d].sd>0?(r[d]-baseOf(r,d,st))/st[d].sd:0;
 const levelOf=(r,d,st)=>{const z=zOf(r,d,st);return z>=CFG.HIGH_Z?'H':z<=-CFG.HIGH_Z?'L':'M'};
 const levelsOf=(r,st)=>({m:levelOf(r,'m',st),p:levelOf(r,'p',st),c:levelOf(r,'c',st)});
 
@@ -464,16 +476,16 @@ function insLagged(ctx){
 /* ---------- bounce-back and runs ---------- */
 function insBounce(ctx){
  const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
- const by={};cr.forEach(r=>{by[r.date]=overallOf(r)});
- const vals=cr.map(overallOf),avg=mean(vals),srt=vals.slice().sort((a,b)=>a-b),cut=srt[Math.max(0,Math.ceil(vals.length*0.2)-1)];
- const low=v=>v!=null&&v<=cut&&v<avg;
+ const wb=weekdayBase(cr,overallOf),avg0=mean(cr.map(overallOf)),by={};cr.forEach(r=>{by[r.date]=overallOf(r)-(wb?wb.base(r):avg0)});
+ const vals=Object.values(by),srt=vals.slice().sort((a,b)=>a-b),cut=srt[Math.max(0,Math.ceil(vals.length*0.2)-1)];
+ const low=v=>v!=null&&v<=cut&&v<0;
  const waits=[];
  for(const r of cr){
   if(!low(by[r.date])||low(by[addDays(r.date,1)]))continue; // last low day of a spell
   for(let k=1;k<=7;k++){
    const v=by[addDays(r.date,k)];
    if(v==null)break; // unrated day or end of data: outcome unknown, skip this spell
-   if(v>=avg){waits.push(k);break}
+   if(v>=0){waits.push(k);break}
    if(k===7)waits.push(8);
   }
  }
@@ -481,11 +493,11 @@ function insBounce(ctx){
  const N=waits.length,sw=waits.slice().sort((a,b)=>a-b),med=N%2?sw[(N-1)/2]:(sw[N/2-1]+sw[N/2])/2;
  const cnt=[waits.filter(k=>k===1).length,waits.filter(k=>k===2).length,waits.filter(k=>k>=3&&k<=4).length,waits.filter(k=>k>=5).length];
  const pct=n=>Math.round(100*n/N);
- const typical=med<=1?'Typically, you were back at your average the very next day.':med>=8?'Typically, it took more than a week to get back to your average.':'Typically, it took about '+plural(Math.ceil(med),'day')+' to get back to your average.';
+ const typical=med<=1?'Typically, you were back at your usual the very next day.':med>=8?'Typically, it took more than a week to get back to your usual.':'Typically, it took about '+plural(Math.ceil(med),'day')+' to get back to your usual.';
  return mk(Object.assign({id:'bounce',layer:'discover',priority:55,
   title:'Bouncing back after low days',
-  finding:'After a low spell, the next day was back at or above your average in '+cnt[0]+' of '+N+' cases ('+pct(cnt[0])+'%).',
-  lines:[typical,'A low day here is one in your lowest-rated fifth (overall '+f1(cut)+' or lower). Back-to-back low days count as one spell, and spells without enough rated days after them are left out.'],
+  finding:'After a low spell, the next day was back at or above your usual in '+cnt[0]+' of '+N+' cases ('+pct(cnt[0])+'%).',
+  lines:[typical,(wb?'A low day here is one in your lowest fifth for its weekday.':'A low day here is one in your lowest-rated fifth (overall '+f1(avg0+cut)+' or lower).')+' Back-to-back low days count as one spell, and spells without enough rated days after them are left out.'],
   prelim:cr.length<CFG.PRELIM_N||N<8,
   chart:{type:'bars',max:N,rows:[['The next day',cnt[0]],['2 days later',cnt[1]],['3 to 4 days later',cnt[2]],['5 or more days later',cnt[3]]].map(x=>({label:x[0],value:x[1],text:x[1]+' of '+N+' ('+pct(x[1])+'%)'}))},
   why:'Low days usually pass. Part of the quick rebound is just how ratings behave: after an unusually low day, a more typical one is likely next. Seeing your own pattern can make one rough day feel less like the start of a slump.'},
@@ -494,10 +506,10 @@ function insBounce(ctx){
 
 function insRuns(ctx){
  const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
- const vals=cr.map(overallOf),avg=mean(vals),s=sd(vals);
+ const vals=cr.map(overallOf),wb=weekdayBase(cr,overallOf),avg=mean(vals),s=wb?wb.sd:sd(vals);
  if(!s)return null;
- const thr=avg+CFG.HIGH_Z*s,hi={};
- cr.forEach(r=>{hi[r.date]=overallOf(r)>=thr});
+ const base=r=>wb?wb.base(r):avg,thr=avg+CFG.HIGH_Z*s,hi={};
+ cr.forEach(r=>{hi[r.date]=overallOf(r)>=base(r)+CFG.HIGH_Z*s});
  const runs=[];
  for(const r of cr){
   if(!hi[r.date]||hi[addDays(r.date,-1)])continue; // runs are counted from their first day
@@ -514,7 +526,7 @@ function insRuns(ctx){
  }
  const last=cr[cr.length-1].date,cur=runs.find(r=>r.end===last);
  if(cur&&cur.len>=2&&(last===ctx.realToday||last===addDays(ctx.realToday,-1)))lines.push('You are on a run of '+cur.len+' above-usual days right now, since '+fmtShort(cur.start)+'.');
- lines.push('Above usual here means an overall rating of '+f1(thr)+' or higher. A day you did not rate ends a run.');
+ lines.push((wb?'Above usual here means clearly above your usual for that weekday. ':'Above usual here means an overall rating of '+f1(thr)+' or higher. ')+'A day you did not rate ends a run.');
  const cnt=[runs.filter(r=>r.len===1).length,runs.filter(r=>r.len===2).length,runs.filter(r=>r.len>=3&&r.len<=4).length,runs.filter(r=>r.len>=5).length];
  return mk(Object.assign({id:'runs',layer:'discover',priority:50,
   title:'Runs of better-than-usual days',
@@ -712,6 +724,7 @@ function analyze(input,todayStr,opts){
  }
  const ctx={rows,comp,today:anchor,realToday:todayStr,score,status,levels:comp.length>=2?levelStats(comp):null,pc:comparePeriods(rows,anchor,period),
   facts:{rel:{}}};
+ ctx.adj=!!(ctx.levels&&ctx.levels.m.wb);out.adjusted=ctx.adj;
  out.overview=buildOverview(ctx);
 
  const obs=[insProgress,insExtremes,insConsistency,insRhythm,insThenNow,insTradeoff].map(f=>f(ctx)).filter(Boolean);
