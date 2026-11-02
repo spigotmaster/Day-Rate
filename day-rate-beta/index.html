@@ -52,8 +52,8 @@ nav button.on{color:var(--fg)}
 .hist{padding:20px 16px;overflow:auto}
 .hist h1{font-size:1.5rem;margin:0 0 4px}
 .sum{color:var(--mut);margin:0 0 16px}
-.gw{overflow-x:auto;padding-bottom:8px}
-.grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,26px);grid-auto-columns:26px;gap:4px;width:max-content}
+.gw{overflow-x:auto;padding:5px 5px 8px}
+.grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,30px);grid-auto-columns:30px;gap:4px;width:max-content}
 .cell{border-radius:7px;border:1.5px solid var(--line);background:transparent;padding:0}
 .cell.f{visibility:hidden}
 .cell.sel{outline:2.5px solid var(--fg);outline-offset:1px}
@@ -140,7 +140,51 @@ nav button.on{color:var(--fg)}
 .tleg .lk{display:inline-flex;align-items:center;gap:6px;color:var(--fg)}
 .tleg svg{width:28px;height:10px;overflow:visible}
 .mk{stroke:var(--bg);stroke-width:1.5}
-#rs{padding-top:28px}
+#rs{padding-top:28px;overflow-y:auto;justify-content:flex-start}
+#rs::before,#rs::after{content:'';margin:auto}
+.moment{display:grid;gap:2px;justify-items:center;padding:10px 18px;border:1.5px solid currentColor;border-radius:16px;max-width:32ch;position:relative;animation:mpop .6s cubic-bezier(.2,.9,.3,1.3)}
+.moment[hidden]{display:none}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
+.dhead .rdate{flex:1;text-align:center}
+.dnav{font:inherit;font-size:1.4rem;line-height:1;width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--fg)}
+.dnav:disabled{opacity:.35}
+.dtop{display:flex;align-items:center;gap:16px;margin:0 0 10px}
+.dtop>div{min-width:0;flex:1}
+.rings.dr{width:92px;flex:none;margin:0}
+.noteIn{width:100%;font:inherit;color:inherit;background:transparent;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.det .tags{justify-content:flex-start;max-width:none;margin:0 0 12px}
+.det .ctx{margin:0 0 12px;max-width:none;text-align:left;color:var(--mut)}
+.dnav:focus-visible,.noteIn:focus-visible{outline:3px solid currentColor;outline-offset:2px}
+.wk7{display:flex;justify-content:space-between;gap:4px;margin:0 0 14px;width:100%;max-width:340px}
+.wd{flex:1;min-width:0;display:grid;justify-items:center;gap:2px;font:inherit;font-size:.8rem;color:inherit;background:transparent;border:0;padding:4px 0}
+.wd svg{width:100%;max-width:40px;transform:rotate(-90deg)}
+.wd circle{fill:none;stroke-width:9;stroke-linecap:round}
+.wd .bg{stroke:currentColor;opacity:.18}
+.wd .empty{stroke:currentColor;opacity:.3;stroke-dasharray:6 7;stroke-width:5}
+.wd:disabled{opacity:.4}
+.wd.now span{font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.wd.sel{outline:2.5px solid currentColor;outline-offset:1px;border-radius:12px}
+.wd:focus-visible{outline:3px solid currentColor;outline-offset:2px;border-radius:12px}
+.hist .wk7{max-width:none}
+.wkcard{border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 14px;display:grid;gap:8px;text-align:left}
+.wkcard h3{font-size:1rem;margin:0}
+.wkcard .tri{display:flex;gap:18px;flex-wrap:wrap}
+.wkcard .tri b{font-size:1.4rem;display:block}
+.wkcard small{color:var(--mut);font-size:.8rem}
+.wkcard p{margin:0;color:var(--mut)}
+#rs .wkcard{border-color:currentColor;max-width:340px;width:100%}
+#rs .wkcard small,#rs .wkcard p{color:inherit;opacity:.9}
+.moment b{font-size:1.05rem;letter-spacing:.02em}
+.moment span{font-size:.92rem}
+.moment i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:currentColor;opacity:0;animation:mburst .9s ease-out .15s}
+@keyframes mpop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+@keyframes mburst{0%{opacity:.9;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(-70px)}}
+@media (prefers-reduced-motion:reduce){.moment{animation:none}}
+.tags{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:340px;margin:2px 0}
+.tags .lbl{flex-basis:100%;font-size:.85rem;opacity:.85}
+.tags button{font:inherit;font-size:.92rem;color:inherit;background:transparent;border:1.5px solid currentColor;border-radius:999px;padding:7px 14px;min-height:36px}
+.tags button[aria-pressed=true]{background:rgba(128,128,128,.3);background:color-mix(in srgb,currentColor 24%,transparent);font-weight:800}
+.tags button:focus-visible{outline:3px solid currentColor;outline-offset:2px}
 .rings{width:min(36vw,26vh,150px);height:auto;transform:rotate(-90deg);margin:0 0 4px}
 .rings circle{fill:none;stroke:currentColor;stroke-width:7;stroke-linecap:round}
 .rings .bg{opacity:.18}
@@ -176,12 +220,16 @@ nav button.on{color:var(--fg)}
  <section class="view" id="vres">
   <div class="stage" id="rs" style="touch-action:auto">
    <div class="rdate" id="rdate"></div>
-   <svg class="rings" id="rings" viewBox="0 0 100 100" aria-hidden="true"></svg>
+   <div class="moment" id="moment" hidden></div>
+  <svg class="rings" id="rings" viewBox="0 0 100 100" aria-hidden="true"></svg>
   <div class="score" id="score"></div>
    <div class="trio" id="trio"></div>
    <input id="note" maxlength="140" placeholder="One good thing about today (optional)" aria-label="Note for this day">
+   <div class="tags" id="tags" role="group" aria-label="What shaped today"></div>
    <div class="rem" id="rem"></div>
   <div class="ctx" id="ctx"></div>
+  <div class="wk7" id="rwk7"></div>
+  <div id="rwk"></div>
    <div id="bye"></div><button class="btn" id="bk" hidden>Back up your data</button>
    <button class="btn" id="edit">Edit ratings</button>
   </div>
@@ -190,6 +238,8 @@ nav button.on{color:var(--fg)}
   <div class="hist">
    <h1>History</h1>
    <p class="sum" id="sum"></p>
+   <div class="wk7" id="wk7"></div>
+   <div id="wkrecap"></div>
    <div class="gw" id="gw"><div class="grid" id="grid"></div></div>
    <p class="legend">Colored: rated. Outline: not rated yet. Tap any day.</p>
    <div class="det" id="det"></div>
@@ -325,13 +375,28 @@ $('#plus').onclick=()=>setVal(vals[step]+1);
 $('#lock').onclick=()=>lock();
 $('#num').addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'){e.preventDefault();setVal(vals[step]+1)}if(e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();setVal(vals[step]-1)}});
 $('#back').onclick=()=>{if(step>0){step--;renderStep()}else home()};
+const TAGS=[['sl','Slept well'],['ex','Exercise'],['ou','Outdoors'],['so','Social'],['al','Alcohol'],['ld','Heavy workload'],['un','Unwell']];
+const TAGLBL=Object.fromEntries(TAGS);
+const tagList=a=>TAGS.map(x=>x[0]).filter(id=>a.includes(id));
+function renderTags(date,box){
+ box=box||$('#tags');box.innerHTML='';
+ const l=document.createElement('div');l.className='lbl';l.textContent='What shaped '+(date===today()?'today':'this day')+'? (optional)';box.appendChild(l);
+ for(const [id,name] of TAGS){
+  const b=document.createElement('button'),set=on=>{b.setAttribute('aria-pressed',on);b.textContent=(on?'\u2713 ':'')+name};
+  b.type='button';set((E[date].tags||[]).includes(id));
+  b.onclick=()=>{const cur=E[date].tags||[],nx=tagList(cur.includes(id)?cur.filter(x=>x!==id):cur.concat(id));if(nx.length)E[date].tags=nx;else delete E[date].tags;save();set(nx.includes(id));buzz(1)};
+  box.appendChild(b);
+ }
+}
 function lock(){
  down=false;
  if(!reduce)st.animate([{transform:'scale(1)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],{duration:400,easing:'ease-in-out'});
  if(step<2){buzz(1);step++;renderStep();return}
- const old=E[target]||{};
+ const old=E[target]||{},isNew=!E[target];
  const e={m:vals[0],p:vals[1],c:vals[2],note:old.note||'',created:old.created||Date.now(),updated:Date.now()};
+ if(old.tags&&old.tags.length)e.tags=old.tags.slice();
  E[target]=e;save();
+ if(isNew){const m=milestone(Object.keys(E).length);if(m){META.mile=m;saveMeta();pendingMile=m}}
  const t=tOf(H(e));buzz(t<.33?1:t<.66?2:3);
  showResult(target);
 }
@@ -358,26 +423,100 @@ function showResult(date){
  const r=remember(date);
  $('#rem').textContent=r?r[0]+': '+fmt(H(r[1]))+(r[1].note?' · '+r[1].note.slice(0,60):''):'';
  $('#bye').textContent=date===today()?'See you tomorrow.':'';
- try{drawRings(e);dayNotes(date,e)}catch(x){}
+ try{renderTags(date);drawRings(e);dayNotes(date,e)}catch(x){}
+ try{momentCard()}catch(x){}
+ try{resultWeek(date)}catch(x){}
  const bk=$('#bk');bk.hidden=!overdue();bk.onclick=()=>show('data');
  $('#edit').onclick=()=>startRate(date);
  show('res');
 }
-function drawRings(e){
- const svg=$('#rings'),v=[e.m,e.p,e.c];
- svg.innerHTML=[44,34,24].map((r,i)=>'<circle class="bg" cx="50" cy="50" r="'+r+'"/><circle class="fg" pathLength="100" cx="50" cy="50" r="'+r+'" style="opacity:'+[1,.8,.6][i]+'"/>').join('');
+function fillRings(svg,e,color){
+ const v=[e.m,e.p,e.c];
+ svg.innerHTML=[44,34,24].map((r,i)=>'<circle class="bg" cx="50" cy="50" r="'+r+'"/><circle class="fg" pathLength="100" cx="50" cy="50" r="'+r+'" style="opacity:'+[1,.8,.6][i]+(color?';stroke:'+color:'')+'"/>').join('');
  const fg=svg.querySelectorAll('.fg'),go=()=>fg.forEach((c,i)=>{c.style.strokeDashoffset=100-v[i]*10});
  if(reduce)go();else requestAnimationFrame(()=>requestAnimationFrame(go));
 }
-function dayNotes(date,e){
+function drawRings(e){fillRings($('#rings'),e)}
+function dayLines(date,e,full){
  const ks=Object.keys(E),n=ks.length,out=[],NM={m:'mood',p:'productivity',c:'connection'};
- if(n>=7)for(const d of ['m','p','c']){if(e[d]>=STATS[d][1]&&ks.filter(k=>E[k][d]===e[d]).length===1){out.push('Your highest '+NM[d]+' so far.');break}}
+ if(n>=7)for(const d of ['m','p','c']){if(e[d]>=STATS[d][1]&&ks.filter(k=>E[k][d]===e[d]).length===1){out.push('Your highest '+NM[d]+(date===today()?' so far.':' on record.'));break}}
  const t=parse(date),prev=[];
  for(let i=1;i<=7;i++){const x=E[ds(new Date(t.getFullYear(),t.getMonth(),t.getDate()-i))];if(x)prev.push(x)}
  if(prev.length>=3){const a=(e.m+e.p+e.c)/3,b=prev.reduce((s,x)=>s+(x.m+x.p+x.c)/3,0)/prev.length,df=a-b;
   out.push(Math.abs(df)<.5?'In line with the 7 days before.':(Math.round(Math.abs(df)*10)/10).toFixed(1)+(df>0?' above':' below')+' the 7 days before.')}
- out.push(n<7?(7-n)+(7-n===1?' more day':' more days')+' until Insights switch on.':n<14?(14-n)+(14-n===1?' more day':' more days')+' until pattern insights unlock.':n+' days in your record.');
- $('#ctx').replaceChildren(...out.map(x=>{const d=document.createElement('div');d.textContent=x;return d}));
+ if(full)out.push(n<7?(7-n)+(7-n===1?' more day':' more days')+' until Insights switch on.':n<14?(14-n)+(14-n===1?' more day':' more days')+' until pattern insights unlock.':n+' days in your record'+nextMile(n)+'.');
+ return out;
+}
+function dayNotes(date,e){$('#ctx').replaceChildren(...dayLines(date,e,true).map(x=>{const d=document.createElement('div');d.textContent=x;return d}))}
+const SVGNS='http://www.w3.org/2000/svg',DN=['M','T','W','T','F','S','S'];
+const addD=(k,n)=>{const d=parse(k);return ds(new Date(d.getFullYear(),d.getMonth(),d.getDate()+n))};
+const monOf=k=>addD(k,-((parse(k).getDay()+6)%7));
+const rng=k=>parse(k).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+const sdate=k=>parse(k).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+const w1=v=>(Math.round(v*10)/10).toFixed(1);
+function weekStrip(box,k,mono,pick,selKey){
+ const mon=monOf(k),t=today();box.innerHTML='';
+ for(let i=0;i<7;i++){
+  const dk=addD(mon,i),e=E[dk],b=document.createElement('button'),svg=document.createElementNS(SVGNS,'svg');
+  b.type='button';b.className='wd'+(dk===t?' now':'')+(dk===selKey?' sel':'');b.disabled=dk>t;
+  b.setAttribute('aria-label',label(dk)+(e?', score '+fmt(H(e)):dk>t?', not yet':', not rated'));
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('aria-hidden','true');
+  if(e){const c=mono?'currentColor':'rgb('+col(tOf(H(e)))+')',v=[e.m,e.p,e.c];
+   svg.innerHTML=[44,34,24].map((r,j)=>'<circle class="bg" cx="50" cy="50" r="'+r+'"/><circle pathLength="100" cx="50" cy="50" r="'+r+'" style="stroke:'+c+';stroke-dasharray:100;stroke-dashoffset:'+(100-v[j]*10)+';opacity:'+[1,.8,.6][j]+'"/>').join('')}
+  else svg.innerHTML='<circle class="empty" cx="50" cy="50" r="40"/>';
+  const l=document.createElement('span');l.textContent=DN[i];
+  b.append(svg,l);b.onclick=()=>pick(dk);box.appendChild(b);
+ }
+}
+function renderWeek(){const k=sel||today();weekStrip($('#wk7'),k,false,x=>{const c=$('#grid').querySelector('[data-d="'+x+'"]');if(c)c.click()},k)}
+function weekRecap(box,wk,quiet){
+ const t=today(),mon=monOf(t);
+ if(!wk)wk=addD(mon,6)===t&&E[t]?mon:addD(mon,-7);
+ box.innerHTML='';
+ const days=[],pdays=[];
+ for(let i=0;i<7;i++){const k=addD(wk,i),q=addD(wk,i-7);if(E[k])days.push([k,E[k]]);if(E[q])pdays.push([q,E[q]])}
+ if(days.length<3&&quiet)return;
+ const card=document.createElement('div');card.className='wkcard';
+ const h=document.createElement('h3');h.textContent='Week recap \u00b7 '+rng(wk)+' to '+rng(addD(wk,6));card.appendChild(h);
+ const add=x=>{const p=document.createElement('p');p.textContent=x;card.appendChild(p);return p};
+ if(days.length<3){add('Only '+days.length+(days.length===1?' day was':' days were')+' rated. Rate at least 3 days in a week to get a recap.');box.appendChild(card);return}
+ const avg=(a,d)=>a.reduce((s,x)=>s+x[1][d],0)/a.length,tri=document.createElement('div');tri.className='tri';
+ for(const [d,nm] of [['m','Mood'],['p','Productivity'],['c','Connection']]){
+  const a=avg(days,d),dl=pdays.length>=3?a-avg(pdays,d):null,c=document.createElement('div');
+  c.innerHTML='<b>'+w1(a)+'</b><small>'+nm+(dl==null?'':Math.abs(dl)<.3?' \u00b7 steady':' \u00b7 '+(dl>0?'up ':'down ')+w1(Math.abs(dl)))+'</small>';
+  tri.appendChild(c);
+ }
+ card.appendChild(tri);
+ const best=days.reduce((a,b)=>H(b[1])>H(a[1])?b:a);
+ add(days.length+' of 7 days rated. Best day: '+sdate(best[0])+' ('+fmt(H(best[1]))+' / 15).');
+ if(best[1].note)add('That day: '+best[1].note);
+ const cnt={};days.forEach(x=>(x[1].tags||[]).forEach(g=>{cnt[g]=(cnt[g]||0)+1}));
+ const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+ if(top&&top[1]>=2&&TAGLBL[top[0]])add('Most tagged: '+TAGLBL[top[0]]+' ('+top[1]+' days).');
+ box.appendChild(card);
+}
+function resultWeek(date){
+ weekStrip($('#rwk7'),date,true,k=>{sel=k;show('hist')},date);
+ if(date===today()&&addD(monOf(date),6)===date)weekRecap($('#rwk'),monOf(date),true);else $('#rwk').innerHTML='';
+}
+const MILES=[7,14,30,50,100,150,200,365],MTITLE={7:'First week logged',14:'Two weeks in',30:'One month of days',50:'Fifty days',100:'One hundred days',150:'150 days',200:'200 days',365:'A full year'};
+let pendingMile=0;
+const milestone=n=>MILES.filter(x=>x<=n&&x>(META.mile||0)).pop()||0;
+const nextMile=n=>{const x=MILES.find(v=>v>n);return x?' \u00b7 '+(x-n)+' to the next milestone ('+x+')':''};
+function momentCard(){
+ const box=$('#moment'),m=pendingMile;pendingMile=0;
+ box.hidden=!m;box.innerHTML='';
+ if(!m)return;
+ let sub='';
+ try{
+  const r=insData(),pl=(n,w)=>n+' '+w+(n===1?'':'s'),solid=r.discover.filter(i=>!i.prelim).length;
+  sub=m===7?(r.observe.length?pl(r.observe.length,'observation')+' ready in Insights.':'Insights are now on.')
+   :m===14?(r.discover.length?pl(r.discover.length,'pattern')+' found in your days.':'Pattern insights are now on.')
+   :r.discover.length?solid+' of '+r.discover.length+' patterns no longer preliminary.':'';
+ }catch(x){}
+ const b=document.createElement('b');b.textContent='\u2726 '+MTITLE[m];box.appendChild(b);
+ if(sub){const t=document.createElement('span');t.textContent=sub;box.appendChild(t)}
+ if(!reduce)for(let k=0;k<10;k++){const i=document.createElement('i');i.style.setProperty('--a',k*36+'deg');box.appendChild(i)}
 }
 function home(){const t=today();E[t]?showResult(t):showToday()}
 function showToday(){
@@ -405,21 +544,33 @@ function renderHist(){
   else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k])))}
   else b.setAttribute('aria-label',label(k)+', not rated');
   if(k===(sel||t))b.classList.add('sel');
-  b.onclick=()=>{sel=k;renderHist()};
+  b.onclick=()=>{sel=k;const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();b.scrollIntoView({inline:'nearest',block:'nearest'})};
   g.appendChild(b);
  }
  const hs=keys.map(k=>H(E[k]));
  $('#sum').textContent=keys.length?keys.length+(keys.length===1?' day':' days')+' rated · average '+fmt(Math.round(hs.reduce((a,b)=>a+b,0)/hs.length))+' / 15':'No days rated yet';
- $('#gw').scrollLeft=1e6;
- renderDet(sel||t,t);
+ $('#gw').scrollLeft=1e6;const sc=g.querySelector('.sel');if(sel&&sc)sc.scrollIntoView({inline:'center',block:'nearest'});
+ renderDet(sel||t,t);renderWeek();weekRecap($('#wkrecap'));
 }
 function renderDet(k,t){
- const d=$('#det'),e=E[k];d.innerHTML='';
- const h=document.createElement('div');h.className='rdate';h.textContent=label(k);d.appendChild(h);
+ const d=$('#det'),e=E[k],kd=parse(k);d.innerHTML='';
+ const nav=(dir,txt,lbl)=>{const nk=ds(new Date(kd.getFullYear(),kd.getMonth(),kd.getDate()+dir)),c=$('#grid').querySelector('[data-d="'+nk+'"]'),b=document.createElement('button');
+  b.type='button';b.className='dnav';b.textContent=txt;b.setAttribute('aria-label',lbl);b.disabled=!c||nk>t;b.onclick=()=>c&&c.click();return b};
+ const hd=document.createElement('div');hd.className='dhead';
+ const h=document.createElement('div');h.className='rdate';h.textContent=label(k);
+ hd.append(nav(-1,'\u2039','Previous day'),h,nav(1,'\u203a','Next day'));d.appendChild(hd);
  if(e){
-  const b=document.createElement('div');b.className='big';b.textContent=fmt(H(e))+' / 15';d.appendChild(b);
-  const r=document.createElement('div');r.className='row';r.innerHTML='<span>Mood '+e.m+' ('+fmt(comp(e,'m'))+'/5)</span><span>Productivity '+e.p+' ('+fmt(comp(e,'p'))+'/5)</span><span>Connection '+e.c+' ('+fmt(comp(e,'c'))+'/5)</span>';d.appendChild(r);
-  if(e.note){const n=document.createElement('p');n.className='note';n.textContent=e.note;d.appendChild(n)}
+  const top=document.createElement('div');top.className='dtop';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('class','rings dr');svg.setAttribute('aria-hidden','true');
+  const side=document.createElement('div');
+  const b=document.createElement('div');b.className='big';b.textContent=fmt(H(e))+' / 15';side.appendChild(b);
+  const r=document.createElement('div');r.className='row';r.innerHTML='<span>Mood '+e.m+' ('+fmt(comp(e,'m'))+'/5)</span><span>Productivity '+e.p+' ('+fmt(comp(e,'p'))+'/5)</span><span>Connection '+e.c+' ('+fmt(comp(e,'c'))+'/5)</span>';side.appendChild(r);
+  top.append(svg,side);d.appendChild(top);
+  fillRings(svg,e,'rgb('+col(tOf(H(e)))+')');
+  const n=document.createElement('input');n.className='noteIn';n.maxLength=140;n.placeholder='One good thing about this day (optional)';n.value=e.note||'';n.setAttribute('aria-label','Note for this day');n.oninput=()=>{E[k].note=n.value;save()};d.appendChild(n);
+  const tb=document.createElement('div');tb.className='tags';tb.setAttribute('role','group');tb.setAttribute('aria-label','What shaped this day');renderTags(k,tb);d.appendChild(tb);
+  const ls=dayLines(k,e,false);
+  if(ls.length){const c=document.createElement('div');c.className='ctx';ls.forEach(x=>{const q=document.createElement('div');q.textContent=x;c.appendChild(q)});d.appendChild(c)}
  }else{
   const p=document.createElement('p');p.className='note';p.textContent=k>t?'This day has not happened yet.':'Not rated.';d.appendChild(p);
  }
@@ -612,7 +763,7 @@ function renderInsights(){
  if(typeof DayRateInsights==='undefined'){tabs.style.display=per.style.display='none';$('#insSub').textContent='';body.appendChild(msgCard('Insights could not load','Close and reopen the app to refresh it. Your ratings are safe.'));return}
  try{r=insData()}catch(e){tabs.style.display=per.style.display='none';body.appendChild(msgCard('Insights hit a problem','Your ratings are safe. Try reopening the app.'));return}
  const st=r.status;
- $('#insSub').textContent=st.total?st.total+(st.total===1?' day':' days')+' rated \u00b7 '+st.complete+' with all three ratings':'No days rated yet';
+ $('#insSub').textContent=st.total?st.total+(st.total===1?' day':' days')+' rated \u00b7 '+st.complete+' with all three ratings'+(st.ready&&r.endsOn&&r.endsOn!==today()?' \u00b7 windows end yesterday until you rate today':''):'No days rated yet';
  if(!st.ready){
   tabs.style.display=per.style.display='none';
   const tr=mkEl('div','track');tr.style.margin='0 0 10px';const f=mkEl('div','fill');f.style.width=Math.min(100,st.total/st.needTotal*100)+'%';tr.appendChild(f);
@@ -640,11 +791,11 @@ function renderInsights(){
 }
 
 /* data: export, backup, import */
-const canonOf=m=>JSON.stringify(Object.keys(m).sort().map(k=>[k,m[k].m,m[k].p,m[k].c,m[k].note||'']));
+const canonOf=m=>JSON.stringify(Object.keys(m).sort().map(k=>{const a=[k,m[k].m,m[k].p,m[k].c,m[k].note||''],g=m[k].tags;if(g&&g.length)a.push(g.join(','));return a}));
 async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function csv(){
  const q=t=>{t=String(t||'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"'};
- return '\ufeff'+['date,mood,productivity,connection,mood_pts,productivity_pts,connection_pts,score,note'].concat(Object.keys(E).sort().map(k=>{const e=E[k];return [k,e.m,e.p,e.c,fmt(comp(e,'m')),fmt(comp(e,'p')),fmt(comp(e,'c')),fmt(H(e)),q(e.note)].join(',')})).join('\r\n')+'\r\n';
+ return '\ufeff'+['date,mood,productivity,connection,mood_pts,productivity_pts,connection_pts,score,note,tags'].concat(Object.keys(E).sort().map(k=>{const e=E[k];return [k,e.m,e.p,e.c,fmt(comp(e,'m')),fmt(comp(e,'p')),fmt(comp(e,'c')),fmt(H(e)),q(e.note),q((e.tags||[]).map(x=>TAGLBL[x]).join('; '))].join(',')})).join('\r\n')+'\r\n';
 }
 async function backupText(){return JSON.stringify({app:'dayrate',version:1,exported_at:new Date().toISOString(),entries:E,checksum:await sha(canonOf(E))})}
 function markBackup(){META.lastBackup=Date.now();saveMeta();renderData()}
@@ -664,7 +815,7 @@ async function importText(t){
  if(!o||o.app!=='dayrate'||!o.entries||typeof o.entries!=='object')return alert('That is not a Day Rate backup. Nothing changed.');
  if(o.version>1)return alert('This backup is from a newer version. Update the app first. Nothing changed.');
  const ent={};
- for(const k of Object.keys(o.entries)){const e=o.entries[k];if(!/^\d{4}-\d\d-\d\d$/.test(k)||!e||![e.m,e.p,e.c].every(v=>Number.isInteger(v)&&v>=1&&v<=10))return alert('The backup has an invalid entry. Nothing changed.');ent[k]={m:e.m,p:e.p,c:e.c,note:String(e.note||'').slice(0,140),created:e.created||Date.now(),updated:e.updated||Date.now()}}
+ for(const k of Object.keys(o.entries)){const e=o.entries[k];if(!/^\d{4}-\d\d-\d\d$/.test(k)||!e||![e.m,e.p,e.c].every(v=>Number.isInteger(v)&&v>=1&&v<=10))return alert('The backup has an invalid entry. Nothing changed.');ent[k]={m:e.m,p:e.p,c:e.c,note:String(e.note||'').slice(0,140),created:e.created||Date.now(),updated:e.updated||Date.now()};const g=tagList(Array.isArray(e.tags)?e.tags:[]);if(g.length)ent[k].tags=g}
  if(await sha(canonOf(ent))!==o.checksum)return alert('Checksum does not match. The file was changed or damaged. Nothing changed.');
  const ks=Object.keys(ent).sort();
  if(!confirm('Replace '+Object.keys(E).length+' days on this device with '+ks.length+' days from the backup'+(ks.length?' ('+ks[0]+' to '+ks[ks.length-1]+')':'')+'? Data is replaced, not merged.'))return;
@@ -677,7 +828,7 @@ function renderData(){
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#hapt').checked=META.haptics;
  $('#xundo').hidden=!ls('dayrate:snap');
- $('#ver').textContent='Day Rate beta 0.8 · '+Object.keys(E).length+' days stored on this device only';
+ $('#ver').textContent='Day Rate beta 1.3 · '+Object.keys(E).length+' days stored on this device only';
  try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
 }
 

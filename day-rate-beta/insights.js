@@ -73,7 +73,7 @@ function clean(input,todayStr){
  for(const[k,e]of pairs){
   if(!isDate(k)||!e||typeof e!=='object'){dropped.invalidDate++;continue}
   if(todayStr&&k>todayStr){dropped.future++;continue}
-  const r={date:k,updated:Number(e.updated)||0,note:typeof e.note==='string'?e.note:''};
+  const r={date:k,updated:Number(e.updated)||0,note:typeof e.note==='string'?e.note:'',tags:Array.isArray(e.tags)?e.tags.filter(x=>typeof x==='string'):[]};
   let any=false;
   for(const d of DIMS){r[d]=rating(e[d]);if(r[d]!=null)any=true}
   if(!any){dropped.noRating++;continue}
@@ -513,7 +513,7 @@ function insRuns(ctx){
   lines.push('After an above-usual day, the next day was also above usual '+Math.round(100*stay/withNext.length)+'% of the time ('+stay+' of '+withNext.length+'), compared with '+Math.round(100*all/cr.length)+'% of all days.');
  }
  const last=cr[cr.length-1].date,cur=runs.find(r=>r.end===last);
- if(cur&&cur.len>=2&&(last===ctx.today||last===addDays(ctx.today,-1)))lines.push('You are on a run of '+cur.len+' above-usual days right now, since '+fmtShort(cur.start)+'.');
+ if(cur&&cur.len>=2&&(last===ctx.realToday||last===addDays(ctx.realToday,-1)))lines.push('You are on a run of '+cur.len+' above-usual days right now, since '+fmtShort(cur.start)+'.');
  lines.push('Above usual here means an overall rating of '+f1(thr)+' or higher. A day you did not rate ends a run.');
  const cnt=[runs.filter(r=>r.len===1).length,runs.filter(r=>r.len===2).length,runs.filter(r=>r.len>=3&&r.len<=4).length,runs.filter(r=>r.len>=5).length];
  return mk(Object.assign({id:'runs',layer:'discover',priority:50,
@@ -569,6 +569,27 @@ function insTies(ctx){
   prelim:cr.length<CFG.PRELIM_N,
   chart:{type:'compare',heads:['High connection','Low connection','Gap'],rows},
   why:'Sandstrom and Dunn (2014) tracked daily interactions and found people felt happier and more a part of their community on days with more social contact than usual, close or casual. Their studies cannot show which comes first.'+RES},
+  allLabel(ctx,cr.length,'complete day')));
+}
+
+/* ---------- tags ---------- */
+const TAGNAME={sl:'Slept well',ex:'Exercise',ou:'Outdoors',so:'Social',al:'Alcohol',ld:'Heavy workload',un:'Unwell'};
+function insTags(ctx){
+ const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
+ const rows=[];
+ for(const t of Object.keys(TAGNAME)){
+  const w=cr.filter(r=>r.tags.includes(t)),o=cr.filter(r=>!r.tags.includes(t));
+  if(w.length<4||o.length<4)continue;
+  const a=mean(w.map(overallOf)),b=mean(o.map(overallOf));
+  rows.push({label:TAGNAME[t],a,b,delta:a-b,n:w.length});
+ }
+ rows.sort((x,y)=>Math.abs(y.delta)-Math.abs(x.delta));
+ const top=rows[0];if(!top||Math.abs(top.delta)<CFG.MEANINGFUL)return null;
+ return mk(Object.assign({id:'tags',layer:'discover',priority:68,title:'What you tagged, and how the day went',
+  finding:'Days you tagged '+top.label+' averaged '+f1(top.a)+' overall, versus '+f1(top.b)+' without it ('+plural(top.n,'tagged day')+').',
+  prelim:top.n<8||cr.length<CFG.PRELIM_N,
+  chart:{type:'compare',heads:['With tag','Without','Gap'],rows:rows.slice(0,5)},
+  why:'Tags let Day Rate compare days with and without something in your own ratings. It shows what goes together, not what causes what, and one day can carry several tags. A tag needs at least 4 days with it and 4 without before it is compared.'},
   allLabel(ctx,cr.length,'complete day')));
 }
 
@@ -677,23 +698,24 @@ function analyze(input,todayStr,opts){
  opts=opts||{};
  const period=opts.period===30?30:7;
  const {rows,dropped}=clean(input,todayStr);
+ const anchor=todayStr&&!rows.some(r=>r.date===todayStr)?addDays(todayStr,-1):todayStr; // windows end on today only once today is rated, so they always hold full days
  const comp=rows.filter(r=>r.complete);
  const dflt=makeScorer(rows);
  const score=r=>{if(typeof opts.score==='function'){const s=opts.score(r);if(typeof s==='number'&&isFinite(s))return s}return dflt(r)};
  const status={total:rows.length,complete:comp.length,needTotal:CFG.MIN_TOTAL,needPairs:CFG.MIN_PAIRS,
   ready:rows.length>=CFG.MIN_TOTAL,discoverReady:comp.length>=CFG.MIN_PAIRS,
   first:rows.length?rows[0].date:null,last:rows.length?rows[rows.length-1].date:null,dropped};
- const out={status,period,config:CFG,overview:null,observe:[],discover:[],act:[],highlights:[],empty:{}};
+ const out={status,period,endsOn:anchor,config:CFG,overview:null,observe:[],discover:[],act:[],highlights:[],empty:{}};
  if(!status.ready){
   out.empty.all='Keep rating your days. As your history grows, you\u2019ll start discovering patterns unique to you.';
   return out;
  }
- const ctx={rows,comp,today:todayStr,score,status,levels:comp.length>=2?levelStats(comp):null,pc:comparePeriods(rows,todayStr,period),
+ const ctx={rows,comp,today:anchor,realToday:todayStr,score,status,levels:comp.length>=2?levelStats(comp):null,pc:comparePeriods(rows,anchor,period),
   facts:{rel:{}}};
  out.overview=buildOverview(ctx);
 
  const obs=[insProgress,insExtremes,insConsistency,insRhythm,insThenNow,insTradeoff].map(f=>f(ctx)).filter(Boolean);
- const dis=status.discoverReady?[insRelationships,insBest,insLagging,insProductiveBest,insArchetypes,insNoteThemes,insDivergence,insLagged,insBounce,insRuns,insLoop,insWeekend,insTies].map(f=>f(ctx)).filter(Boolean):[];
+ const dis=status.discoverReady?[insRelationships,insBest,insLagging,insProductiveBest,insArchetypes,insNoteThemes,insDivergence,insLagged,insBounce,insRuns,insLoop,insWeekend,insTies,insTags].map(f=>f(ctx)).filter(Boolean):[];
  const byPri=(a,b)=>b.priority-a.priority;
  out.observe=obs.sort(byPri);
  out.discover=dis.sort(byPri);
