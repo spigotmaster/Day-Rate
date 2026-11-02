@@ -13,9 +13,9 @@
 <meta name="theme-color" content="#f6f4fb" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12101f" media="(prefers-color-scheme: dark)">
 <style>
-:root{box-sizing:border-box;--bg:#f6f4fb;--fg:#1d1a33;--mut:#625e7a;--line:#cfcae2;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;color-scheme:dark}
+:root{box-sizing:border-box;--bg:#f6f4fb;--fg:#1d1a33;--mut:#625e7a;--line:#cfcae2;--lm:#0e6a7a;--lp:#a85a05;--lc:#5a3fb5;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;--lm:#4cc3d9;--lp:#f0b24a;--lc:#b8a2ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12101f;--fg:#efecfa;--mut:#a9a5c0;--line:#3a3555;--lm:#4cc3d9;--lp:#f0b24a;--lc:#b8a2ff;color-scheme:dark}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font:16px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
 #app{height:100%;display:flex;flex-direction:column}
@@ -135,6 +135,18 @@ nav button.on{color:var(--fg)}
 .fine{font-size:.85rem;color:var(--mut);margin:4px 0 20px}
 .chart.wk{margin:10px 0 0}
 .chart.wk text.v{fill:var(--fg);font-weight:700}
+.seg.tg{flex-wrap:wrap}.seg.tg button{flex:1 1 auto;padding:0 12px;font-size:.92rem}
+.tleg{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--mut);font-size:.88rem;margin:8px 0 0}
+.tleg .lk{display:inline-flex;align-items:center;gap:6px;color:var(--fg)}
+.tleg svg{width:28px;height:10px;overflow:visible}
+.mk{stroke:var(--bg);stroke-width:1.5}
+#rs{padding-top:28px}
+.rings{width:min(36vw,26vh,150px);height:auto;transform:rotate(-90deg);margin:0 0 4px}
+.rings circle{fill:none;stroke:currentColor;stroke-width:7;stroke-linecap:round}
+.rings .bg{opacity:.18}
+.rings .fg{stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
+.ctx{display:grid;gap:4px;font-size:.95rem;max-width:32ch;opacity:.95}
+@media (prefers-reduced-motion:reduce){.rings .fg{transition:none}}
 @media (prefers-reduced-motion:reduce){.stage{transition:none}}
 </style>
 </head>
@@ -164,10 +176,12 @@ nav button.on{color:var(--fg)}
  <section class="view" id="vres">
   <div class="stage" id="rs" style="touch-action:auto">
    <div class="rdate" id="rdate"></div>
-   <div class="score" id="score"></div>
+   <svg class="rings" id="rings" viewBox="0 0 100 100" aria-hidden="true"></svg>
+  <div class="score" id="score"></div>
    <div class="trio" id="trio"></div>
-   <input id="note" maxlength="140" placeholder="One line about today (optional)" aria-label="Note for this day">
+   <input id="note" maxlength="140" placeholder="One good thing about today (optional)" aria-label="Note for this day">
    <div class="rem" id="rem"></div>
+  <div class="ctx" id="ctx"></div>
    <div id="bye"></div><button class="btn" id="bk" hidden>Back up your data</button>
    <button class="btn" id="edit">Edit ratings</button>
   </div>
@@ -184,8 +198,11 @@ nav button.on{color:var(--fg)}
   <section class="view" id="vtr"><div class="pane">
   <h1>Trends</h1>
   <div class="seg" id="seg" role="group" aria-label="Range"><button data-r="14" class="on">2 weeks</button><button data-r="30">Month</button><button data-r="365">Year</button></div>
-  <svg class="chart" id="chart" viewBox="0 0 340 210" role="img" aria-label="Weighted score over time"></svg>
+  <div class="seg tg" id="trs" role="group" aria-label="Lines to show"><button data-s="s" class="on">Score</button><button data-s="m">Mood</button><button data-s="p">Productivity</button><button data-s="c">Connection</button></div>
+  <svg class="chart" id="chart" viewBox="0 0 340 210" role="img" aria-label="Score over time"></svg>
+  <div class="tleg" id="tleg"></div>
   <p class="sum" id="trsum"></p>
+  <p class="fine">Pick one rating or overlay several to compare them. Score always shows on its own.</p>
  </div></section>
   <section class="view" id="vins"><div class="pane">
   <h1>Insights</h1>
@@ -200,6 +217,7 @@ nav button.on{color:var(--fg)}
   <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
   <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
   <div class="card"><h2>How Insights work</h2><p>Insights use only the ratings stored on this device and are calculated here, with no account or server. They describe patterns in your own history and never prove what causes what. Summaries need 7 rated days, pattern insights need 14 days with all three ratings, and findings built on fewer than 30 days are marked preliminary. Notes are only scanned for a few everyday keywords such as walk, gym or friends.</p></div>
+  <div class="card"><h2>Research behind Insights</h2><p>Several insights are built on published studies. They describe groups of people, so Day Rate only checks whether the same pattern shows in your own ratings.</p><p>Progress and mood: Amabile and Kramer (2011). Happiness and output: Oswald, Proto and Sgroi (2015). Daily social contact: Sandstrom and Dunn (2014). Weekends: Helliwell and Wang (2014). Writing down good things: Seligman and colleagues (2005). A later replication found lasting happiness gains too, but a placebo exercise did as well.</p></div>
   <div class="card"><h2>Settings</h2><label class="row2"><input type="checkbox" id="hapt"> Haptics (may not work on every iPhone)</label><p id="stor"></p></div>
   <p class="sum" id="ver"></p>
  </div></section>
@@ -340,9 +358,26 @@ function showResult(date){
  const r=remember(date);
  $('#rem').textContent=r?r[0]+': '+fmt(H(r[1]))+(r[1].note?' · '+r[1].note.slice(0,60):''):'';
  $('#bye').textContent=date===today()?'See you tomorrow.':'';
+ try{drawRings(e);dayNotes(date,e)}catch(x){}
  const bk=$('#bk');bk.hidden=!overdue();bk.onclick=()=>show('data');
  $('#edit').onclick=()=>startRate(date);
  show('res');
+}
+function drawRings(e){
+ const svg=$('#rings'),v=[e.m,e.p,e.c];
+ svg.innerHTML=[44,34,24].map((r,i)=>'<circle class="bg" cx="50" cy="50" r="'+r+'"/><circle class="fg" pathLength="100" cx="50" cy="50" r="'+r+'" style="opacity:'+[1,.8,.6][i]+'"/>').join('');
+ const fg=svg.querySelectorAll('.fg'),go=()=>fg.forEach((c,i)=>{c.style.strokeDashoffset=100-v[i]*10});
+ if(reduce)go();else requestAnimationFrame(()=>requestAnimationFrame(go));
+}
+function dayNotes(date,e){
+ const ks=Object.keys(E),n=ks.length,out=[],NM={m:'mood',p:'productivity',c:'connection'};
+ if(n>=7)for(const d of ['m','p','c']){if(e[d]>=STATS[d][1]&&ks.filter(k=>E[k][d]===e[d]).length===1){out.push('Your highest '+NM[d]+' so far.');break}}
+ const t=parse(date),prev=[];
+ for(let i=1;i<=7;i++){const x=E[ds(new Date(t.getFullYear(),t.getMonth(),t.getDate()-i))];if(x)prev.push(x)}
+ if(prev.length>=3){const a=(e.m+e.p+e.c)/3,b=prev.reduce((s,x)=>s+(x.m+x.p+x.c)/3,0)/prev.length,df=a-b;
+  out.push(Math.abs(df)<.5?'In line with the 7 days before.':(Math.round(Math.abs(df)*10)/10).toFixed(1)+(df>0?' above':' below')+' the 7 days before.')}
+ out.push(n<7?(7-n)+(7-n===1?' more day':' more days')+' until Insights switch on.':n<14?(14-n)+(14-n===1?' more day':' more days')+' until pattern insights unlock.':n+' days in your record.');
+ $('#ctx').replaceChildren(...out.map(x=>{const d=document.createElement('div');d.textContent=x;return d}));
 }
 function home(){const t=today();E[t]?showResult(t):showToday()}
 function showToday(){
@@ -397,23 +432,49 @@ $('#ni').onclick=()=>show('ins');
 $('#nd').onclick=()=>show('data');
 
 /* trends */
-let range=14;
+let range=14,trSel=['s'];
 $('#seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;range=+b.dataset.r;renderTrend()};
+$('#trs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.s;
+ if(k==='s')trSel=['s'];
+ else{const r=trSel.filter(x=>x!=='s');trSel=r.includes(k)?r.filter(x=>x!==k):r.concat(k);if(!trSel.length)trSel=['s']}
+ renderTrend()};
+const TRS={s:{name:'Score',get:e=>H(e)},m:{name:'Mood',get:e=>e.m},p:{name:'Productivity',get:e=>e.p},c:{name:'Connection',get:e=>e.c}};
+const TRSTY={m:{v:'var(--lm)',dash:'',sh:'circle'},p:{v:'var(--lp)',dash:'7 4',sh:'square'},c:{v:'var(--lc)',dash:'1.5 4.5',sh:'tri'}};
+const r1=v=>Math.round(v*10)/10;
+function mkr(sh,x,y,r,fill){x=r1(x);y=r1(y);const f='style="fill:'+fill+'"';
+ return sh==='square'?'<rect class="mk" x="'+r1(x-r)+'" y="'+r1(y-r)+'" width="'+2*r+'" height="'+2*r+'" rx="1" '+f+'/>':
+  sh==='tri'?'<polygon class="mk" points="'+x+','+r1(y-r-.5)+' '+r1(x+r+.5)+','+r1(y+r)+' '+r1(x-r-.5)+','+r1(y+r)+'" '+f+'/>':
+  '<circle class="mk" cx="'+x+'" cy="'+y+'" r="'+r+'" '+f+'/>';
+}
 function renderTrend(){
  [...$('#seg').children].forEach(b=>b.classList.toggle('on',+b.dataset.r===range));
- const td=parse(today()),W=340,Ht=210,L=28,R=8,T=10,B=26,pw=W-L-R,ph=Ht-T-B;
+ [...$('#trs').children].forEach(b=>{const on=trSel.includes(b.dataset.s);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ const score=trSel[0]==='s',td=parse(today()),W=340,Ht=210,L=28,R=8,T=10,B=26,pw=W-L-R,ph=Ht-T-B;
  const day=i=>ds(new Date(td.getFullYear(),td.getMonth(),td.getDate()-i));
- const step=range>60?7:1,n=Math.ceil(range/step),bs=[];
- for(let b=0;b<n;b++){let s=0,c=0;for(let j=0;j<step;j++){const i=range-1-(b*step+j);if(i<0)continue;const e=E[day(i)];if(e){s+=H(e);c++}}bs.push(c?s/c:null)}
- const X=b=>L+pw*b/(n-1),Y=h=>T+ph*(1-h/1500);
- let g='',d='',dots='',prev=false;
- [0,5,10,15].forEach(v=>{const y=Y(v*100);g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(L-5)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>'});
- bs.forEach((h,b)=>{if(h==null){prev=false;return}d+=(prev?'L':'M')+X(b).toFixed(1)+' '+Y(h).toFixed(1);prev=true;dots+='<circle cx="'+X(b).toFixed(1)+'" cy="'+Y(h).toFixed(1)+'" r="'+(n>31?3:4.5)+'" fill="rgb('+col(tOf(h))+')"/>'});
+ const step=range>60?7:1,n=Math.ceil(range/step),lo=score?0:1,hi=score?1500:10;
+ const X=b=>L+pw*b/(n-1),Y=v=>T+ph*(1-(v-lo)/(hi-lo)),rad=n>31?3:4.5;
+ let g='';
+ (score?[0,5,10,15]:[1,4,7,10]).forEach(v=>{const y=Y(score?v*100:v);g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(L-5)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>'});
  const lab=i=>parse(day(i)).toLocaleDateString(undefined,{day:'numeric',month:'short'});
  g+='<text x="'+L+'" y="'+(Ht-8)+'">'+lab(range-1)+'</text><text x="'+(L+pw/2)+'" y="'+(Ht-8)+'" text-anchor="middle">'+lab(Math.round((range-1)/2))+'</text><text x="'+(W-R)+'" y="'+(Ht-8)+'" text-anchor="end">Today</text>';
- $('#chart').innerHTML=g+'<path class="ln" d="'+d+'"/>'+dots;
- const v=[];for(let i=0;i<range;i++){const e=E[day(i)];if(e)v.push(H(e))}
- $('#trsum').textContent=v.length?v.length+' of '+range+' days rated · average '+fmt(Math.round(v.reduce((a,b)=>a+b,0)/v.length))+' / 15 · best '+fmt(Math.max(...v))+' · lowest '+fmt(Math.min(...v))+(range>60?'. Weekly averages shown.':''):'No rated days in this range yet.';
+ trSel.forEach(k=>{
+  const bs=[];for(let b=0;b<n;b++){let sm=0,c=0;for(let j=0;j<step;j++){const i=range-1-(b*step+j);if(i<0)continue;const e=E[day(i)];if(e){sm+=TRS[k].get(e);c++}}bs.push(c?sm/c:null)}
+  const sty=TRSTY[k];let d='',dots='',prev=false;
+  bs.forEach((v,b)=>{if(v==null){prev=false;return}
+   d+=(prev?'L':'M')+X(b).toFixed(1)+' '+Y(v).toFixed(1);prev=true;
+   dots+=score?mkr('circle',X(b),Y(v),rad,'rgb('+col(tOf(v))+')'):mkr(sty.sh,X(b),Y(v),rad,sty.v)});
+  g+='<path class="ln" d="'+d+'"'+(score?'':' style="stroke:'+sty.v+(sty.dash?';stroke-dasharray:'+sty.dash:'')+'"')+'/>'+dots;
+ });
+ $('#chart').innerHTML=g;
+ $('#chart').setAttribute('aria-label',score?'Score over time':trSel.map(k=>TRS[k].name).join(', ')+' ratings over time');
+ $('#tleg').innerHTML=score?'Score out of 15':trSel.map(k=>{const t=TRSTY[k];return '<span class="lk"><svg viewBox="0 0 28 10" aria-hidden="true"><line x1="2" x2="26" y1="5" y2="5" style="stroke:'+t.v+';stroke-width:2;stroke-linecap:round'+(t.dash?';stroke-dasharray:'+t.dash:'')+'"/>'+mkr(t.sh,14,5,3.5,t.v)+'</svg>'+TRS[k].name+'</span>'}).join('')+'<span>Rated 1 to 10</span>';
+ const rows=[];for(let i=0;i<range;i++){const e=E[day(i)];if(e)rows.push(e)}
+ const avg=a=>a.reduce((x,y)=>x+y,0)/a.length,wk=range>60?'. Weekly averages shown.':'';
+ let t;
+ if(!rows.length)t='No rated days in this range yet.';
+ else if(score){const v=rows.map(H);t=v.length+' of '+range+' days rated · average '+fmt(Math.round(avg(v)))+' / 15 · best '+fmt(Math.max(...v))+' · lowest '+fmt(Math.min(...v))+wk}
+ else t=rows.length+' of '+range+' days rated · '+trSel.map(k=>{const v=rows.map(TRS[k].get);return TRS[k].name+' average '+n1(avg(v))+(trSel.length===1?' · best '+Math.max(...v)+' · lowest '+Math.min(...v):'')}).join(' · ')+wk;
+ $('#trsum').textContent=t;
 }
 
 
@@ -616,7 +677,7 @@ function renderData(){
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#hapt').checked=META.haptics;
  $('#xundo').hidden=!ls('dayrate:snap');
- $('#ver').textContent='Day Rate beta 0.4 · '+Object.keys(E).length+' days stored on this device only';
+ $('#ver').textContent='Day Rate beta 0.8 · '+Object.keys(E).length+' days stored on this device only';
  try{navigator.storage.persisted().then(v=>{$('#stor').textContent=v?'Storage protection: on.':'Storage protection: not granted. Back up regularly.'})}catch(e){$('#stor').textContent=''}
 }
 

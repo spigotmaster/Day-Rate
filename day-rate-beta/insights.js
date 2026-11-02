@@ -461,6 +461,117 @@ function insLagged(ctx){
   allLabel(ctx,pairs.length,'pair of days')));
 }
 
+/* ---------- bounce-back and runs ---------- */
+function insBounce(ctx){
+ const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
+ const by={};cr.forEach(r=>{by[r.date]=overallOf(r)});
+ const vals=cr.map(overallOf),avg=mean(vals),srt=vals.slice().sort((a,b)=>a-b),cut=srt[Math.max(0,Math.ceil(vals.length*0.2)-1)];
+ const low=v=>v!=null&&v<=cut&&v<avg;
+ const waits=[];
+ for(const r of cr){
+  if(!low(by[r.date])||low(by[addDays(r.date,1)]))continue; // last low day of a spell
+  for(let k=1;k<=7;k++){
+   const v=by[addDays(r.date,k)];
+   if(v==null)break; // unrated day or end of data: outcome unknown, skip this spell
+   if(v>=avg){waits.push(k);break}
+   if(k===7)waits.push(8);
+  }
+ }
+ if(waits.length<4)return null;
+ const N=waits.length,sw=waits.slice().sort((a,b)=>a-b),med=N%2?sw[(N-1)/2]:(sw[N/2-1]+sw[N/2])/2;
+ const cnt=[waits.filter(k=>k===1).length,waits.filter(k=>k===2).length,waits.filter(k=>k>=3&&k<=4).length,waits.filter(k=>k>=5).length];
+ const pct=n=>Math.round(100*n/N);
+ const typical=med<=1?'Typically, you were back at your average the very next day.':med>=8?'Typically, it took more than a week to get back to your average.':'Typically, it took about '+plural(Math.ceil(med),'day')+' to get back to your average.';
+ return mk(Object.assign({id:'bounce',layer:'discover',priority:55,
+  title:'Bouncing back after low days',
+  finding:'After a low spell, the next day was back at or above your average in '+cnt[0]+' of '+N+' cases ('+pct(cnt[0])+'%).',
+  lines:[typical,'A low day here is one in your lowest-rated fifth (overall '+f1(cut)+' or lower). Back-to-back low days count as one spell, and spells without enough rated days after them are left out.'],
+  prelim:cr.length<CFG.PRELIM_N||N<8,
+  chart:{type:'bars',max:N,rows:[['The next day',cnt[0]],['2 days later',cnt[1]],['3 to 4 days later',cnt[2]],['5 or more days later',cnt[3]]].map(x=>({label:x[0],value:x[1],text:x[1]+' of '+N+' ('+pct(x[1])+'%)'}))},
+  why:'Low days usually pass. Part of the quick rebound is just how ratings behave: after an unusually low day, a more typical one is likely next. Seeing your own pattern can make one rough day feel less like the start of a slump.'},
+  allLabel(ctx,N,'low spell')));
+}
+
+function insRuns(ctx){
+ const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
+ const vals=cr.map(overallOf),avg=mean(vals),s=sd(vals);
+ if(!s)return null;
+ const thr=avg+CFG.HIGH_Z*s,hi={};
+ cr.forEach(r=>{hi[r.date]=overallOf(r)>=thr});
+ const runs=[];
+ for(const r of cr){
+  if(!hi[r.date]||hi[addDays(r.date,-1)])continue; // runs are counted from their first day
+  let len=1;while(hi[addDays(r.date,len)])len++;
+  runs.push({start:r.date,end:addDays(r.date,len-1),len});
+ }
+ const best=runs.reduce((a,b)=>b.len>a.len||(b.len===a.len&&b.end>a.end)?b:a,{len:0});
+ if(best.len<2)return null;
+ const lines=[];
+ const withNext=cr.filter(r=>hi[r.date]&&hi[addDays(r.date,1)]!==undefined);
+ if(withNext.length>=8){
+  const stay=withNext.filter(r=>hi[addDays(r.date,1)]).length,all=cr.filter(r=>hi[r.date]).length;
+  lines.push('After an above-usual day, the next day was also above usual '+Math.round(100*stay/withNext.length)+'% of the time ('+stay+' of '+withNext.length+'), compared with '+Math.round(100*all/cr.length)+'% of all days.');
+ }
+ const last=cr[cr.length-1].date,cur=runs.find(r=>r.end===last);
+ if(cur&&cur.len>=2&&(last===ctx.today||last===addDays(ctx.today,-1)))lines.push('You are on a run of '+cur.len+' above-usual days right now, since '+fmtShort(cur.start)+'.');
+ lines.push('Above usual here means an overall rating of '+f1(thr)+' or higher. A day you did not rate ends a run.');
+ const cnt=[runs.filter(r=>r.len===1).length,runs.filter(r=>r.len===2).length,runs.filter(r=>r.len>=3&&r.len<=4).length,runs.filter(r=>r.len>=5).length];
+ return mk(Object.assign({id:'runs',layer:'discover',priority:50,
+  title:'Runs of better-than-usual days',
+  finding:'Your longest run of above-usual days lasted '+plural(best.len,'day')+' ('+fmtShort(best.start)+' to '+fmtShort(best.end)+').',
+  lines,prelim:cr.length<CFG.PRELIM_N,
+  chart:{type:'bars',max:Math.max(1,...cnt),rows:[['1 day on its own',cnt[0]],['2 days in a row',cnt[1]],['3 to 4 days in a row',cnt[2]],['5 or more in a row',cnt[3]]].map(x=>({label:x[0],value:x[1],text:plural(x[1],'run')}))},
+  why:'Good stretches are easy to miss one day at a time. Seeing how long yours last, and whether one good day tends to lead into another, shows how your better days cluster.'},
+  allLabel(ctx,cr.length,'complete day')));
+}
+
+/* ---------- research-based insights (group-level studies, checked against your own ratings) ---------- */
+const mOf=(rs,d)=>rs.length?mean(rs.map(r=>r[d])):null;
+const RES=' These are group-level findings, so this only checks whether the same pattern appears in your own ratings, not why.';
+const topGap=rows=>rows.slice().sort((x,y)=>Math.abs(y.delta)-Math.abs(x.delta))[0];
+function insLoop(ctx){
+ const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
+ const st=ctx.levels,by={};cr.forEach(r=>{by[r.date]=r});
+ const pr=cr.filter(r=>by[addDays(r.date,1)]).map(r=>[r,by[addDays(r.date,1)]]),rows=[];
+ for(const [a,b,lab] of [['p','m','Mood the next day after a productive day'],['m','p','Productivity the next day after a good-mood day']]){
+  const hi=pr.filter(x=>levelOf(x[0],a,st)==='H').map(x=>x[1]),lo=pr.filter(x=>levelOf(x[0],a,st)!=='H').map(x=>x[1]);
+  if(hi.length>=4&&lo.length>=4)rows.push({label:lab,a:mOf(hi,b),b:mOf(lo,b),delta:mOf(hi,b)-mOf(lo,b),n:hi.length});
+ }
+ const big=topGap(rows);
+ if(!big||Math.abs(big.delta)<CFG.MEANINGFUL)return null;
+ return mk(Object.assign({id:'loop',layer:'discover',priority:62,title:'Do your good days carry into the next one?',
+  finding:big.label+' averaged '+f1(big.a)+', versus '+f1(big.b)+' after other days ('+plural(big.n,'such day')+').',
+  prelim:pr.length<CFG.PRELIM_N,
+  chart:{type:'compare',heads:['After high','Otherwise','Gap'],rows},
+  why:'In a diary study of about 12,000 entries from 238 employees, Amabile and Kramer (2011) found that making progress was the most common event on the best days, and that those days fed creative output. Oswald, Proto and Sgroi (2015) found that people made happier in experiments were about 12% more productive.'+RES},
+  allLabel(ctx,pr.length,'pair of days')));
+}
+function insWeekend(ctx){
+ const cr=ctx.comp,we=cr.filter(r=>wdOf(r.date)>=5),wd=cr.filter(r=>wdOf(r.date)<5);
+ if(cr.length<CFG.MIN_PAIRS||we.length<3||wd.length<3)return null;
+ const rows=DIMS.map(d=>({d,label:CAP[d],a:mOf(we,d),b:mOf(wd,d),delta:mOf(we,d)-mOf(wd,d)})),top=topGap(rows);
+ if(Math.abs(top.delta)<CFG.MEANINGFUL)return null;
+ return mk(Object.assign({id:'weekend',layer:'discover',priority:52,title:'Weekends compared with weekdays',
+  finding:'Your '+NAME[top.d]+' averaged '+f1(top.a)+' on weekends versus '+f1(top.b)+' on weekdays.',
+  lines:['Based on '+plural(we.length,'weekend day')+' and '+plural(wd.length,'weekday')+'.'],prelim:cr.length<CFG.PRELIM_N||we.length<8,
+  chart:{type:'compare',heads:['Weekends','Weekdays','Gap'],rows},
+  why:'In a large US daily poll, Helliwell and Wang (2014) found more happiness, enjoyment and laughter, and less worry and sadness, on weekends, with much of the lift explained by extra time with friends and family. Life evaluations showed no day-of-week effect.'+RES},
+  allLabel(ctx,cr.length,'complete day')));
+}
+function insTies(ctx){
+ const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
+ const st=ctx.levels,hi=cr.filter(r=>levelOf(r,'c',st)==='H'),lo=cr.filter(r=>levelOf(r,'c',st)==='L');
+ if(hi.length<3||lo.length<3)return null;
+ const rows=['m','p'].map(d=>({d,label:CAP[d],a:mOf(hi,d),b:mOf(lo,d),delta:mOf(hi,d)-mOf(lo,d)})),top=topGap(rows);
+ if(Math.abs(top.delta)<CFG.MEANINGFUL)return null;
+ return mk(Object.assign({id:'ties',layer:'discover',priority:64,title:'Connection and the rest of your day',
+  finding:'On days your connection was above your usual, your '+NAME[top.d]+' averaged '+f1(top.a)+', versus '+f1(top.b)+' on days it was below ('+hi.length+' and '+lo.length+' days).',
+  prelim:cr.length<CFG.PRELIM_N,
+  chart:{type:'compare',heads:['High connection','Low connection','Gap'],rows},
+  why:'Sandstrom and Dunn (2014) tracked daily interactions and found people felt happier and more a part of their community on days with more social contact than usual, close or casual. Their studies cannot show which comes first.'+RES},
+  allLabel(ctx,cr.length,'complete day')));
+}
+
 /* ===================== ACT ===================== */
 function buildExperiments(ctx,have){
  const f=ctx.facts,ex=[];
@@ -582,7 +693,7 @@ function analyze(input,todayStr,opts){
  out.overview=buildOverview(ctx);
 
  const obs=[insProgress,insExtremes,insConsistency,insRhythm,insThenNow,insTradeoff].map(f=>f(ctx)).filter(Boolean);
- const dis=status.discoverReady?[insRelationships,insBest,insLagging,insProductiveBest,insArchetypes,insNoteThemes,insDivergence,insLagged].map(f=>f(ctx)).filter(Boolean):[];
+ const dis=status.discoverReady?[insRelationships,insBest,insLagging,insProductiveBest,insArchetypes,insNoteThemes,insDivergence,insLagged,insBounce,insRuns,insLoop,insWeekend,insTies].map(f=>f(ctx)).filter(Boolean):[];
  const byPri=(a,b)=>b.priority-a.priority;
  out.observe=obs.sort(byPri);
  out.discover=dis.sort(byPri);
