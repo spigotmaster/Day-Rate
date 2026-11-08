@@ -6,7 +6,7 @@ export default [
   { ignores: ['node_modules', 'dist', 'insights.js', 'achievements.js', 'sw.js', 'tests/achievements.test.js'] },
   js.configs.recommended,
   {
-    files: ['src/storage.js', 'src/migrate.js', 'src/errorlog.js', 'src/review.js', 'tests/**/*.mjs'],
+    files: ['src/storage.js', 'src/migrate.js', 'src/errorlog.js', 'src/review.js', 'src/demo.js', 'tests/**/*.mjs'],
     languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: { ...globals.browser, ...globals.node } },
     rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^_' }], eqeqeq: ['error', 'always', { null: 'ignore' }] },
   },

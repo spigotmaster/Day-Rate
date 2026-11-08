@@ -1,5 +1,5 @@
 import {$,today} from './util.js';
-import {E,H,META,buzz,paint,reduce,save,saveMeta,tOf,tick} from './state.js';
+import {E,H,META,buzz,paint,reduce,save,saveMeta,status,tOf,tick} from './state.js';
 import {show} from './nav.js';
 import {showResult} from './result.js';
 import {home,milestone,setPendingMile} from './history.js';
@@ -80,6 +80,6 @@ export function lock(){
  if(isNew){const m=milestone(Object.keys(E).length);if(m){META.mile=m;saveMeta();setPendingMile(m)}}
  const t=tOf(H(e));buzz(t<.33?1:t<.66?2:3);
  showResult(target);
- try{const f=achSync();if(f.length)setTimeout(()=>celebrate(f),700)}catch(x){}
+ if(!status.demo)try{const f=achSync();if(f.length)setTimeout(()=>celebrate(f),700)}catch(x){}
 }
 

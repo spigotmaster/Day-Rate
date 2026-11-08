@@ -1,9 +1,9 @@
-# Day Rate beta 1.16
+# Day Rate beta 1.18
 
 Static PWA, no build step. Upload the whole folder structure (keep `src/` as a folder).
 - `index.html` page markup, `styles.css` all styling
-- `src/*.js` the app as ES modules: `util` (dom + dates), `state` (data, scoring, storage wiring), `nav`, `rate`, `result` (result, week recap, goals, delete), `history`, `trends`, `insights-ui`, `celebrate`, `ach-ui`, `data`, `app` (startup, update banner)
-- `src/review.js` (pure search and recap maths), `src/review-ui.js` (History > Recap and Search screens)
+- `src/*.js` the app as ES modules: `util` (dom + dates), `state` (data, scoring, storage wiring), `nav`, `rate`, `result` (result, week recap, delete), `forecast` + `forecast-ui` (expected values), `history`, `trends`, `insights-ui`, `celebrate`, `ach-ui`, `data`, `app` (startup, update banner)
+- `src/onboarding.js` (intro tour and sample mode), `src/demo.js` (sample data generator), `src/review.js` (pure search and recap maths), `src/review-ui.js` (History > Recap and Search screens)
 - `src/storage.js` IndexedDB store with localStorage fallback, `src/migrate.js` schema versions and migrations, `src/errorlog.js` on-device error log
 - `insights.js`, `achievements.js` pure calculation engines (classic scripts, loaded before the app)
 - `manifest.json`, `sw.js`, icons
@@ -23,7 +23,7 @@ Opening index.html by double-click no longer works (browsers block ES modules on
 - Data lives only on the device. No sync, no server.
 
 ## Update
-Edit files, change CACHE name in sw.js (dayrate-v26 -> dayrate-v27) and add any new file to its FILES list, upload. Open the app: "Update ready" banner appears; tap it.
+Edit files, change CACHE name in sw.js (dayrate-v27 -> dayrate-v28) and add any new file to its FILES list, upload. Open the app: "Update ready" banner appears; tap it.
 
 ## Move data from another install
 Old install: Data > Backup file. New install: Data > Import backup.
@@ -75,14 +75,15 @@ Two new groups. Rules use raw ratings and calendar days, like the rest.
 - Fun and calendar: Lucky Seven (7, 7, 7), Staircase (each rating one higher than the last), Fresh Start (a day rated on 1 January), Rough Patch Survivor (3+ days in a row averaging 4 or less, then a full week above your average from before them; needs 14 days of history first).
 - Update behaviour: achievements added in a new version that you already qualify for (earned before today) are filled in quietly with their real dates, with no popups. Anything earned today celebrates as usual. Engine version is stored as `achV` in `dayrate:meta`.
 
-## Daily goals (beta 1.12)
-- Optional 1 to 10 goals for mood, productivity and connection, plus an Expect switch on the same card for what you think the day will be. Expectations show Spot on, Higher by N or Lower by N once rated. Set them with the - and + buttons on the first screen, before rating (Today) and after (result screen). Once the day is rated each goal shows Met, Beat by N or N short.
-- Stored per date in `META.goals` (latest 200 days kept). Included in the backup file (restoring fills in goals you don't already have; older backups without goals still import). Deleting a day's ratings leaves its goals.
-
-## Goal stats, expectations and birthday (beta 1.14)
-- Insights > Observe: a Goals and expectations card for the chosen period (last 7 or 30 days): how often each goal was met, and how far ratings landed from expectations, with a "usually higher or lower" note once there are 5 expected days.
-- Expectations are stored in `META.goals[date]` as `xm`, `xp`, `xc` beside the goals `m`, `p`, `c`, and are in the backup file.
-- Data > Settings: Birthday. Only day and month are stored (`META.bday`, also in the backup). Fresh Start now counts a day rated on 1 January or on that birthday; `evaluate(entries, today, { bday })`.
+## Expected values (beta 1.18)
+Goals and the Expect buttons are gone. Today and the result screen now show an **expected value** for mood, productivity and connection, calculated from your own history by an equation (see `FORECAST.md`).
+- `src/forecast.js` pure maths (baseline + weekday effect + ridge regression on momentum, streaks, mean reversion, other ratings + similar-day correction), `src/forecast-ui.js` the cards. Nothing new is stored.
+- Today (unrated): "Expected today", each rating with a likely range (about 8 in 10 days), a confidence word, and a "Why these numbers" drop-down.
+- Result screen: for the day shown, expected vs rated (using only days before it); for today also "Expected tomorrow".
+- Insights > Observe > Forecast accuracy: how far off the forecast was over the last 7 or 30 days against guessing your average, and your recovery patterns.
+- "Why these numbers" also gives a plain-language version from fixed weights (similar days 40, week so far 20, streak 15, weekday 10, mean reversion 10, other ratings 5). Accuracy compares both with guessing your average.
+- Needs 7 rated days; under 30 is labelled preliminary. A record with gaps is fine (unrated days are treated as unknown).
+- Old goals and expectations already saved in `META.goals` are left alone but no longer read, shown or exported.
 
 ## Storage, migrations, error log (beta 1.15)
 - Data now lives in IndexedDB (browsers clear localStorage more eagerly). localStorage is still written on every save as a rollback copy.
@@ -94,8 +95,8 @@ Two new groups. Rules use raw ratings and calendar days, like the rest.
 - Data > Troubleshooting: Copy debug info (version, schema, day count, recent errors; never ratings or notes) and Clear error log.
 
 ## Tests
-- Unit: `node --test` (Node 20+, no installs). 44 tests: achievements, migrations, error log, search and recap maths.
-- End to end (needs `pip install playwright && playwright install chromium`): `python3 tests/e2e/smoke.py .`, `explore.py .` (clicks every button in every tab), `storage.py .`, `review.py .`. Or `npm run e2e`.
+- Unit: `node --test` (Node 20+, no installs). 50 tests: achievements, migrations, error log, search and recap maths, sample data.
+- End to end (needs `pip install playwright && playwright install chromium`): `python3 tests/e2e/smoke.py .`, `explore.py .` (clicks every button in every tab), `storage.py .`, `review.py .`, `onboarding.py .`. Or `npm run e2e`. Test seeds set `onboarded` so the intro does not cover the screen; only onboarding.py starts from a truly empty install.
 - Run them before and after any refactor. They use only element ids and storage keys.
 
 ## History: Recap and Search (beta 1.16)
@@ -105,6 +106,14 @@ History now has four modes: Weeks, Year, Recap, Search.
 - Search: words (all must match, in notes and tag names), tags (all must match), rating band (8+, 5 to 7, 4 or less) for one category or any, and date range. Tap a result to open that day in Weeks.
 - All maths uses raw 1-10 ratings, in `src/review.js`.
 
+## Onboarding and sample mode (beta 1.17)
+- First launch with no saved days shows a 4-step intro: the three ratings, how the relative score works, privacy (plus an Add to Home Screen note for iPhone browsers), and a choice: rate the first day or try sample data. Skip (button or Escape) is always available on steps 1 to 3.
+- Anyone who already has saved days is marked as done silently and never sees it. Replay from Data > Intro > Show intro.
+- Sample mode: `status.demo`. Real days and settings are parked in memory, 42 deterministic sample days load, and `save()` / `saveMeta()` do nothing, so neither storage nor the pre-migration backups can ever see sample data. A banner stays on screen with Exit sample. Export, import and undo are switched off, no celebrations fire, and a reload always returns to the real data.
+- Do not add any new write path (storage, backups, share files) without checking `status.demo`.
+
 ## Release notes
+- 1.18: goals and manual expectations replaced by an equation-based expected value (FORECAST.md), with a learned version and a fixed-weight rules version; forecast accuracy card in Insights; explore.py no longer depends on the old goal buttons.
+- 1.17: onboarding intro and sample mode.
 - 1.16: History Recap (month and year, share image) and Search.
 - 1.15: index.html split into modules and stylesheet; IndexedDB storage, migrations, error log; Troubleshooting card; service worker precache list covers the new files. The sw.js inside the 1.14 zip was an empty file; this release restores it. If the live site's sw.js is fine, keep your cache number higher than the live one.

@@ -10,6 +10,7 @@ import './celebrate.js';
 import './ach-ui.js';
 import './data.js';
 import './review-ui.js';
+import {maybeOnboard} from './onboarding.js';
 
 hooks.renderInsights=renderInsights;
 export let tipT=0;
@@ -36,6 +37,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
 }
 errorLog.install(window);
 (async()=>{
- try{await initStore();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home()}
+ try{await initStore();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home();maybeOnboard()}
  catch(e){errorLog.add('boot',e);alert('Day Rate could not load your data, so nothing was changed. Close and reopen the app. If this repeats, use Data > Copy debug info.')}
 })();

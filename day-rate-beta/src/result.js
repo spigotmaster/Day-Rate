@@ -1,9 +1,10 @@
 import {$,ds,pad,parse,today} from './util.js';
-import {E,H,META,STATS,buzz,col,comp,fmt,label,overdue,paint,reduce,save,saveMeta,tOf} from './state.js';
+import {E,H,META,STATS,buzz,col,comp,fmt,label,overdue,paint,reduce,save,tOf} from './state.js';
 import {show} from './nav.js';
 import {TAGLBL,renderTags,st,startRate} from './rate.js';
 import {momentCard,nextMile,sel,setSel,showToday} from './history.js';
-import {EXPLEN,expDay,expSync,mkEl} from './insights-ui.js';
+import {EXPLEN,expDay,expSync} from './insights-ui.js';
+import {expectCard} from './forecast-ui.js';
 
 /* result */
 export function remember(date){
@@ -32,7 +33,7 @@ export function showResult(date){
  try{resultWeek(date)}catch(x){}
  const bk=$('#bk');bk.hidden=!overdue();bk.onclick=()=>show('data');
  $('#edit').onclick=()=>startRate(date);
- $('#rgoal').replaceChildren(...(date===today()||Object.keys(goalsFor(date)).length?[goalCard(date)]:[]));
+ try{$('#rfc').replaceChildren(expectCard(date))}catch(x){$('#rfc').replaceChildren()}
  $('#rdel').replaceChildren(delControl(date,()=>{if(date===today())showToday();else{setSel(date);show('hist')}}));
  show('res');
 }
@@ -105,56 +106,6 @@ export function weekRecap(box,wk,quiet){
  if(top&&top[1]>=2&&TAGLBL[top[0]])add('Most tagged: '+TAGLBL[top[0]]+' ('+top[1]+' days).');
  if(part&&pdays.length>=3)add('Changes compare with the same days of the week before.');
  box.appendChild(card);
-}
-/* daily goals: optional 1 to 10 targets for mood, productivity and connection, kept in META.goals by date */
-export const GDIM=[['m','Mood'],['p','Productivity'],['c','Connection']];
-export const goalsFor=k=>(META.goals&&META.goals[k])||{};
-export function setGoal(k,d,v){
- META.goals=META.goals||{};const g=Object.assign({},META.goals[k]);
- if(v==null)delete g[d];else g[d]=v;
- if(Object.keys(g).length)META.goals[k]=g;else delete META.goals[k];
- const ks=Object.keys(META.goals).sort();ks.slice(0,Math.max(0,ks.length-200)).forEach(x=>delete META.goals[x]);
- saveMeta();
-}
-export function goalCard(date){
- const box=mkEl('div','goals');let mode='g';
- const draw=fk=>{
-  box.innerHTML='';
-  const g=goalsFor(date),e=E[date],pre=mode==='g'?'':'x';
-  const seg=mkEl('div','gseg');seg.setAttribute('role','group');seg.setAttribute('aria-label','Goals or expectations');
-  [['g','Goals'],['x','Expect']].forEach(([m,t])=>{const b=mkEl('button','gt'+(mode===m?' on':''),t);b.type='button';b.dataset.k='seg'+m;b.setAttribute('aria-pressed',mode===m);b.onclick=()=>{mode=m;draw('seg'+m)};seg.appendChild(b)});
-  box.appendChild(seg);
-  box.appendChild(mkEl('h3',null,(mode==='g'?'Goals for ':'What you expect for ')+(date===today()?'today':label(date))));
-  GDIM.forEach(([d,nm])=>{
-   const key=pre+d,row=mkEl('div','grow'),v=g[key];
-   const mk=(txt,al,nv)=>{const b=mkEl('button','gb',txt);b.type='button';b.dataset.k=key+txt;b.setAttribute('aria-label',al+' '+nm.toLowerCase()+(mode==='g'?' goal':' expectation'));b.onclick=()=>{setGoal(date,key,nv);draw(key+txt)};return b};
-   const val=mkEl('span','gv',v==null?'\u2014':String(v));
-   row.append(mkEl('span','gn',nm),mk('\u2212','Lower',v==null?7:Math.max(1,v-1)),val,mk('+','Raise',v==null?7:Math.min(10,v+1)));
-   const st=mkEl('span','gs');
-   if(v!=null&&e){const df=e[d]-v;st.textContent=mode==='g'?(df>0?'Beat by '+df:df===0?'Met':(-df)+' short'):(df===0?'Spot on':df>0?'Higher by '+df:'Lower by '+(-df))}
-   row.appendChild(st);box.appendChild(row);
-  });
-  if(GDIM.some(([d])=>g[pre+d]!=null)){const c=mkEl('button','gx',mode==='g'?'Clear goals':'Clear expectations');c.type='button';c.onclick=()=>{GDIM.forEach(([d])=>setGoal(date,pre+d,null));draw()};box.appendChild(c)}
-  if(fk){const b=box.querySelector('[data-k="'+fk+'"]');if(b)b.focus()}
- };
- draw();return box;
-}
-/* Insights card: how goals and expectations compare with ratings over the chosen period */
-export function goalStatsCard(per){
- const t=today(),days=[];for(let i=0;i<per;i++){const k=addD(t,-i);if(E[k])days.push(k)}
- const c=mkEl('div','card');c.appendChild(mkEl('h2',null,'Goals and expectations'));
- let n=0;
- GDIM.forEach(([d,nm])=>{
-  const gd=days.filter(k=>goalsFor(k)[d]!=null),xd=days.filter(k=>goalsFor(k)['x'+d]!=null),bits=[];
-  if(gd.length)bits.push('goal met on '+gd.filter(k=>E[k][d]>=goalsFor(k)[d]).length+' of '+gd.length+(gd.length===1?' day':' days'));
-  if(xd.length){
-   const df=xd.map(k=>E[k][d]-goalsFor(k)['x'+d]),miss=df.reduce((a,x)=>a+Math.abs(x),0)/df.length,bias=df.reduce((a,x)=>a+x,0)/df.length;
-   bits.push('rated within '+w1(miss)+' of what you expected, on average'+(xd.length>=5&&Math.abs(bias)>=.3?' (usually '+(bias>0?'higher':'lower')+' than you expected)':''));
-  }
-  if(bits.length){n++;c.appendChild(mkEl('p',null,nm+': '+bits.join('; ')+'.'))}
- });
- if(!n)c.appendChild(mkEl('p',null,'Set goals or expectations on the first screen. Once those days are rated, this compares them with your ratings.'));
- return c;
 }
 /* delete a day: button, then an inline are-you-sure step. onDone runs after the day is removed. */
 export function delControl(date,onDone){

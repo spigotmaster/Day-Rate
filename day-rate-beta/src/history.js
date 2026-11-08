@@ -2,7 +2,8 @@ import {$,ds,parse,today} from './util.js';
 import {E,H,META,col,comp,fmt,label,ls,reduce,save,tOf} from './state.js';
 import {show} from './nav.js';
 import {C,renderTags,startRate} from './rate.js';
-import {addD,dayLines,delControl,fillRings,goalCard,monOf,renderWeek,showResult} from './result.js';
+import {addD,dayLines,delControl,fillRings,monOf,renderWeek,showResult} from './result.js';
+import {expectCard} from './forecast-ui.js';
 import {insData} from './insights-ui.js';
 import {renderRecap,renderSearch} from './review-ui.js';
 
@@ -65,7 +66,7 @@ export function showToday(){
  const ks=Object.keys(E).sort(),n=ks.length;
  $('#tsum').textContent=n?'Last rated '+parse(ks[n-1]).toLocaleDateString(undefined,{day:'numeric',month:'short'})+': '+fmt(H(E[ks[n-1]]))+' / 15. '+n+(n===1?' day':' days')+' so far, average '+fmt(Math.round(ks.reduce((a,k)=>a+H(E[k]),0)/n))+' / 15.':'No days rated yet. Your first rating takes about five seconds.';
  $('#rateNow').onclick=()=>startRate(today());
- $('#tgoal').replaceChildren(goalCard(today()));
+ try{$('#tfc').replaceChildren(expectCard(today()))}catch(x){$('#tfc').replaceChildren()}
  show('today');
 }
 

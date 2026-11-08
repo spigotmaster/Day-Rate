@@ -3,22 +3,22 @@ import {openStore,requestPersistence} from './storage.js';
 import {migrate} from './migrate.js';
 import {createErrorLog} from './errorlog.js';
 
-export const VERSION='1.16';
+export const VERSION='1.18';
 export const KEY='dayrate:v1';
 const safeLS=(()=>{try{return localStorage}catch(e){return {getItem:()=>null,setItem(){},removeItem(){}}}})();
 export const errorLog=createErrorLog({storage:safeLS});
 /* status.ready is false until stored data has loaded; nothing is written before then so an early tap can never overwrite real data.
    readOnly is set when the stored data comes from a newer app version. */
-export const status={ready:false,readOnly:false,backend:'localStorage',schema:1,from:'none'};
+export const status={ready:false,readOnly:false,backend:'localStorage',schema:1,from:'none',demo:false};
 let store=null,rev=0;
 const lsw=(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){errorLog.add('save',e,k);return false}};
 const touch=()=>{rev++;lsw('dayrate:rev',String(rev))};
 function persist(){if(!store)return;Promise.all([store.set('entries',E),store.set('meta',META),store.set('rev',rev)]).catch(e=>errorLog.add('idb',e))}
 export let E={};
-export function save(){recalc();if(status.ready&&!status.readOnly){lsw(KEY,JSON.stringify(E));touch();persist()}if(curView==='ins'&&hooks.renderInsights)hooks.renderInsights()}
+export function save(){recalc();if(status.ready&&!status.readOnly&&!status.demo){lsw(KEY,JSON.stringify(E));touch();persist()}if(curView==='ins'&&hooks.renderInsights)hooks.renderInsights()}
 export const ls=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 export let META={haptics:true,sound:true},curView='res';
-export const saveMeta=()=>{if(!status.ready||status.readOnly)return;lsw('dayrate:meta',JSON.stringify(META));touch();persist()};
+export const saveMeta=()=>{if(!status.ready||status.readOnly||status.demo)return;lsw('dayrate:meta',JSON.stringify(META));touch();persist()};
 export const overdue=()=>Object.keys(E).length>0&&(!META.lastBackup||Date.now()-META.lastBackup>7*864e5);
 /*SCORE*/
 export let STATS={};
@@ -74,3 +74,4 @@ export async function initStore(){
  return status;
 }
 export {requestPersistence};
+export function replaceMeta(o){for(const k of Object.keys(META))delete META[k];Object.assign(META,o)}

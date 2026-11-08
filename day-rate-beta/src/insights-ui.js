@@ -2,7 +2,8 @@ import {$,parse,today} from './util.js';
 import {E,H,META,col,paint,saveMeta} from './state.js';
 import {show} from './nav.js';
 import {st} from './rate.js';
-import {addD,goalStatsCard,rng,w1} from './result.js';
+import {addD,rng,w1} from './result.js';
+import {forecastStatsCard} from './forecast-ui.js';
 import {home} from './history.js';
 
 /* insights UI: all numbers come from insights.js; this block only draws them */
@@ -193,7 +194,7 @@ export function renderInsights(){
  else if(insTab==='obs'){
   body.appendChild(mkEl('p','fine','What happened in your ratings.'));
   if(r.observe.length)cardList(body,r.observe,'obs');else body.appendChild(msgCard('Not enough in this period','Rate a few more days in this period to see comparisons.'));
-  body.appendChild(goalStatsCard(insPer));
+  try{body.appendChild(forecastStatsCard(insPer))}catch(x){}
  }else if(insTab==='dis'){
   body.appendChild(mkEl('p','fine','Patterns across all your history. These are observations from your own ratings, not proof of cause.'));
   if(r.empty.discover){

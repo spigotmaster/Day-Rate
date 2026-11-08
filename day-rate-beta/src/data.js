@@ -1,7 +1,6 @@
 import {$,today} from './util.js';
 import {E,H,META,VERSION,comp,errorLog,fmt,ls,save,saveMeta,setE,status} from './state.js';
 import {TAGLBL,tagList} from './rate.js';
-import {goalsFor,setGoal} from './result.js';
 import {ac,celebrate,tone} from './celebrate.js';
 import {achSync} from './ach-ui.js';
 
@@ -12,9 +11,10 @@ export function csv(){
  const q=t=>{t=String(t||'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"'};
  return '\ufeff'+['date,mood,productivity,connection,mood_pts,productivity_pts,connection_pts,score,note,tags'].concat(Object.keys(E).sort().map(k=>{const e=E[k];return [k,e.m,e.p,e.c,fmt(comp(e,'m')),fmt(comp(e,'p')),fmt(comp(e,'c')),fmt(H(e)),q(e.note),q((e.tags||[]).map(x=>TAGLBL[x]).join('; '))].join(',')})).join('\r\n')+'\r\n';
 }
-export async function backupText(){return JSON.stringify({app:'dayrate',version:1,exported_at:new Date().toISOString(),entries:E,ach:META.ach||{},goals:META.goals||{},bday:META.bday||null,checksum:await sha(canonOf(E))})}
+export async function backupText(){return JSON.stringify({app:'dayrate',version:1,exported_at:new Date().toISOString(),entries:E,ach:META.ach||{},bday:META.bday||null,checksum:await sha(canonOf(E))})}
 export function markBackup(){META.lastBackup=Date.now();saveMeta();renderData()}
 export async function deliver(name,text,type,after){
+ if(status.demo)return alert('Sample data is showing. Exit the sample first.');
  const f=new File([text],name,{type});
  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});after&&after();return}}catch(e){if(e&&e.name==='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();
@@ -36,6 +36,7 @@ $('#xcopy').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipbo
 $('#ximp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f)importText(await f.text())};
 export async function importText(t){
+ if(status.demo)return alert('Sample data is showing. Exit the sample first.');
  let o;try{o=JSON.parse(t)}catch(e){return alert('That file is not valid JSON. Nothing changed.')}
  if(!o||o.app!=='dayrate'||!o.entries||typeof o.entries!=='object')return alert('That is not a Day Rate backup. Nothing changed.');
  if(o.version>1)return alert('This backup is from a newer version. Update the app first. Nothing changed.');
@@ -47,7 +48,6 @@ export async function importText(t){
  try{localStorage.setItem('dayrate:snap',JSON.stringify(E))}catch(e){}
  setE(ent);save();
  if(o.ach&&typeof o.ach==='object'){META.ach=META.ach||{};for(const k of Object.keys(o.ach))if(/^[a-z_0-9]+#\d$/.test(k)&&/^\d{4}-\d\d-\d\d$/.test(o.ach[k])&&!META.ach[k])META.ach[k]=o.ach[k];saveMeta()}
- if(o.goals&&typeof o.goals==='object'){for(const k of Object.keys(o.goals)){const g=o.goals[k];if(!/^\d{4}-\d\d-\d\d$/.test(k)||!g||typeof g!=='object')continue;for(const d of ['m','p','c','xm','xp','xc'])if(Number.isInteger(g[d])&&g[d]>=1&&g[d]<=10&&goalsFor(k)[d]==null)setGoal(k,d,g[d])}}
  if(typeof o.bday==='string'&&/^\d\d-\d\d$/.test(o.bday)&&!META.bday){META.bday=o.bday;saveMeta()}
  renderData();alert('Imported '+ks.length+' days.');
 }
@@ -57,6 +57,7 @@ $('#bday').onchange=e=>{const v=e.target.value;if(/^\d{4}-\d\d-\d\d$/.test(v))ME
 $('#snd').onchange=e=>{META.sound=e.target.checked;saveMeta();if(e.target.checked){ac();tone(880,0,.2,'sine',.15)}};
 $('#celTest').onclick=()=>celebrate([{title:'Driven III',desc:'Productivity of 8 or more on 365 days',date:today(),level:3,levels:3},{title:'Triple Eight',desc:'All three ratings at 8 or more on the same day',date:today(),level:1,levels:1}]);
 export function renderData(){
+ const dm=status.demo;['xcsv','xjson','xcopy','ximp','xundo','onbAgain'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=dm});$('#demoNote').hidden=!dm;
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
  $('#rtime').value=META.remind||'20:00';
  $('#hapt').checked=META.haptics;

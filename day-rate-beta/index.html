@@ -16,6 +16,7 @@
 </head>
 <body>
 <div id="app">
+ <div id="demoBar" role="status" hidden><span>Sample data. Nothing here is saved.</span><button class="btn" id="demoExit" type="button">Exit sample</button></div>
  <section class="view" id="vrate">
   <div class="stage" id="st">
    <div class="top"><button class="btn" id="back">Cancel</button><div class="dots" id="dots"><i></i><i></i><i></i></div></div>
@@ -33,7 +34,7 @@
   <div class="stage" style="touch-action:auto;padding-top:24px">
    <div class="q">Today isn’t rated yet</div>
    <p class="def" id="tsum"></p>
-   <div id="tgoal"></div>
+   <div id="tfc"></div>
    <button class="btn cta" id="rateNow">Rate today</button>
    <div class="hint">No rush. History, Trends and Data are in the bar below.</div>
   </div>
@@ -49,7 +50,7 @@
    <div class="tags" id="tags" role="group" aria-label="What shaped today"></div>
    <div class="rem" id="rem"></div>
   <div class="ctx" id="ctx"></div>
-   <div id="rgoal"></div>
+   <div id="rfc"></div>
   <div class="wk7" id="rwk7"></div>
   <div id="rwk"></div>
    <div id="bye"></div><button class="btn" id="bk" hidden>Back up your data</button>
@@ -96,7 +97,9 @@
  </div></section>
  <section class="view" id="vdata"><div class="pane">
   <h1>Data</h1>
+  <p class="sum" id="demoNote" hidden>Sample data is showing, so export and import are switched off. Exit the sample to use them.</p>
   <div class="card"><h2>Export</h2><p id="lastbk"></p><button class="btn" id="xcsv">Export CSV</button><button class="btn" id="xjson">Backup file</button><button class="btn" id="xcopy">Copy backup text</button></div>
+  <div class="card"><h2>Intro</h2><p>The short tour of how Day Rate works, plus sample data you can look around in without touching your own days.</p><button class="btn" id="onbAgain" type="button">Show intro</button></div>
   <div class="card"><h2>Troubleshooting</h2><p>If something looks wrong, copy this and send it to whoever is helping you. It holds counts and error messages only, never your ratings or notes.</p><button class="btn" id="xdbg">Copy debug info</button><button class="btn" id="xdbgclr">Clear error log</button></div>
   <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
   <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
@@ -118,6 +121,11 @@
   <button id="nd" aria-label="Data" title="Data"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/></svg></button>
  </nav>
  <div id="tabtip" aria-hidden="true"></div>
+ <div id="onb" role="dialog" aria-modal="true" aria-labelledby="onbT" hidden>
+  <div class="onbtop"><span id="onbStep"></span><button class="btn" id="onbSkip" type="button">Skip</button></div>
+  <div class="onbbody" id="onbBody"></div>
+  <div class="onbfoot"><div class="onbdots" id="onbDots" aria-hidden="true"></div><div class="onbbtns"><button class="btn" id="onbBack" type="button">Back</button><button class="btn cta" id="onbNext" type="button">Next</button></div></div>
+ </div>
  <div id="cele" role="dialog" aria-modal="true" aria-labelledby="celT" hidden>
   <canvas id="celCv" aria-hidden="true"></canvas>
   <div class="celCard">
