@@ -1,6 +1,6 @@
 /* Day Rate achievements engine.
    Pure functions only: no DOM, no storage, no globals. Works in the browser and in Node (tests).
-   evaluate(entries, todayStr) -> [{id, group, name, have, tiers:[{i, need, desc, date}], next}]
+   evaluate(entries, todayStr, extra)   extra: optional { bday: 'MM-DD' } for Fresh Start -> [{id, group, name, v, have, tiers:[{i, need, desc, date}], next}]
    entries : { 'YYYY-MM-DD': {m,p,c,...} }   todayStr: the app's today() (respects the 4am rollover)
    Everything uses RAW ratings (1-10), never the relative 0-15 score, so thresholds stay stable
    as your all-time range changes. "Average" of a day = (mood + productivity + connection) / 3.
@@ -278,20 +278,68 @@ add('mirror_day','bw','Mirror Day',n=>'A day where your best and worst category 
  return t;
 });
 
+/* Added in engine version 2. Showing up */
+const since2=()=>{A[A.length-1].v=2};
+add('habit_formed','habit','Habit Formed',n=>dy(n)+' in a row with a rating',[7,30,100],
+ c=>streak(c.days,(x,p,r,cons)=>(cons&&r>0)?r+1:1));since2();
+add('full_week','habit','Full Week',n=>'All 7 days of a Monday to Sunday week rated, '+n+(n===1?' week':' different weeks'),[1,4,12],c=>{
+ const t=[],seen=new Set();let n=0;
+ for(const x of c.days){
+  const mon=x.n-x.wd;if(seen.has(mon))continue;seen.add(mon);
+  let all=true;for(let i=0;i<7;i++)if(!c.byN.has(mon+i)){all=false;break}
+  if(all){n++;t.push([dstr(mon+6),n])}
+ }
+ return t;
+});since2();
+add('full_month','habit','Full Month',n=>'Every day rated in '+(n===1?'a calendar month':n+' different calendar months'),[1,3,6],c=>{
+ const t=[];let n=0;
+ for(const k of c.keys){
+  const dim=Number(lastDay(k).slice(8));
+  if(c.months.get(k).length===dim){n++;t.push([lastDay(k),n])}
+ }
+ return t;
+});since2();
+add('centurion','habit','Centurion',n=>n+' days rated in total',[100,250,500,1000],c=>counter(c.days,()=>true));since2();
+
+/* Fun and calendar */
+add('lucky_seven','fun','Lucky Seven',()=>'Mood, productivity and connection all exactly 7 on the same day',[1],
+ c=>counter(c.days,x=>x.m===7&&x.p===7&&x.c===7));since2();
+add('staircase','fun','Staircase',()=>'Mood, productivity and connection each one point higher than the last, such as 5, 6, 7',[1],
+ c=>counter(c.days,x=>x.p===x.m+1&&x.c===x.p+1));since2();
+add('fresh_start','fun','Fresh Start',()=>'A day rated on 1 January or on your birthday (set it in Data)',[1],
+ c=>counter(c.days,x=>x.d.slice(5)==='01-01'||x.d.slice(5)===c.bday));since2();
+add('rough_patch','fun','Rough Patch Survivor',n=>'Three or more days in a row averaging 4 or less, then a week above your average from before them, '+n+(n===1?' time':' times'),[1,3],c=>{
+ const D=c.days,t=[];let n=0,k=0;
+ while(k<D.length){
+  if(D[k].a>4+EPS){k++;continue}
+  let j=k;while(j+1<D.length&&D[j+1].n-D[j].n===1&&D[j+1].a<=4+EPS)j++;
+  if(j-k+1>=3){
+   const endN=D[j].n,pre=D.slice(0,k);
+   if(pre.length>=14&&endN+7<=c.todayN){
+    const w=[];for(let q=1;q<=7;q++){const x=c.byN.get(endN+q);if(x)w.push(x)}
+    if(w.length>=5&&avg(w)>avg(pre)+EPS){n++;t.push([dstr(endN+7),n])}
+   }
+  }
+  k=j+1;
+ }
+ return t;
+});since2();
+
 const GROUPS=[
- ['highs','Highs'],['streaks','Streaks'],['growth','Growth'],['balance','Balance and variety'],['bw','Best and worst days']
+ ['highs','Highs'],['streaks','Streaks'],['growth','Growth'],['balance','Balance and variety'],['bw','Best and worst days'],['habit','Showing up'],['fun','Fun and calendar']
 ];
 
-function evaluate(entries,todayStr){
+function evaluate(entries,todayStr,extra){
  const c=build(prep(entries),todayStr);
+ c.bday=extra&&/^\d\d-\d\d$/.test(extra.bday||'')?extra.bday:null;
  return A.map(a=>{
   let tr=[];
   try{tr=a.track(c)}catch(e){tr=[]}
   const have=tr.length?tr[tr.length-1][1]:0;
   const tiers=a.tiers.map((need,i)=>{const hit=tr.find(r=>r[1]>=need);return {i,need,desc:a.desc(need),date:hit?hit[0]:null}});
-  return {id:a.id,group:a.g,name:a.name,have,tiers,next:tiers.find(t=>!t.date)||null};
+  return {id:a.id,group:a.g,name:a.name,v:a.v||1,have,tiers,next:tiers.find(t=>!t.date)||null};
  });
 }
 
-return {evaluate,GROUPS,CFG:{count:A.length}};
+return {evaluate,GROUPS,CFG:{count:A.length,v:2}};
 });
