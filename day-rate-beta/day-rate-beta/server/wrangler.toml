@@ -1,0 +1,17 @@
+name = "day-rate-reminders"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "day-rate-reminders"
+database_id = "0e9d095e-51b6-47bc-bf13-27dcd79975da"
+
+[vars]
+ALLOWED_ORIGIN = "https://spigotmaster.github.io"
+VAPID_SUBJECT = "mailto:osti.million@gmail.com"
+VAPID_PUBLIC = "BMytNRXHzbbuVEfFUsgNL1MsBmAmTSV-xdKR3J7RMHaGbTHTbFs_dsdvOtO2T7DpZ4-gKUXXt-6iije2emHcrWA"
+MAX_SUBS = "2000"

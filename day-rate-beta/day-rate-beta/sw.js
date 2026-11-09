@@ -1,0 +1,8 @@
+const CACHE='dayrate-v30';
+const FILES=['./','index.html','styles.css','insights.js','achievements.js','src/util.js','src/state.js','src/nav.js','src/rate.js','src/result.js','src/history.js','src/trends.js','src/insights-ui.js','src/forecast.js','src/forecast-ui.js','src/celebrate.js','src/ach-ui.js','src/data.js','src/app.js','src/config.js','src/notify.js','src/demo.js','src/onboarding.js','src/review.js','src/review-ui.js','src/storage.js','src/migrate.js','src/errorlog.js','manifest.json','icon-192.png','icon-512.png','apple-touch-icon.png'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.all(FILES.map(f=>c.add(new Request(f,{cache:'reload'}))))))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))))});
+self.addEventListener('message',e=>{if(e.data==='skip')self.skipWaiting()});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)))});
+self.addEventListener('push',e=>{e.waitUntil(self.registration.showNotification('Day Rate',{body:'How was today? Rating takes about 20 seconds.',tag:'dayrate-daily',icon:'icon-192.png',badge:'icon-192.png',data:{url:'./#rate'}}))});
+self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil((async()=>{const all=await clients.matchAll({type:'window',includeUncontrolled:true});for(const c of all){if('focus' in c){await c.focus();try{c.postMessage('rate')}catch(x){}return}}return clients.openWindow(new URL('./#rate',self.registration.scope).href)})())});
