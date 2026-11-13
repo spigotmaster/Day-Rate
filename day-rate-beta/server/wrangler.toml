@@ -11,7 +11,10 @@ database_name = "day-rate-reminders"
 database_id = "0e9d095e-51b6-47bc-bf13-27dcd79975da"
 
 [vars]
+# 1) Replace with where your app lives, origin only: https://yourname.github.io  (no trailing slash, no /day-rate path)
 ALLOWED_ORIGIN = "https://spigotmaster.github.io"
-VAPID_SUBJECT = "mailto:osti.million@gmail.com"
-VAPID_PUBLIC = "BMytNRXHzbbuVEfFUsgNL1MsBmAmTSV-xdKR3J7RMHaGbTHTbFs_dsdvOtO2T7DpZ4-gKUXXt-6iije2emHcrWA"
+VAPID_SUBJECT = "mailto:m.stc.osti@gmail.com"
+# 2) Replace with the PUBLIC key line printed by: node server/generate-vapid.mjs
+VAPID_PUBLIC = "BHOecxLdHrOme74ZYL9JbjUqpOaNBoW940jPBUEomu0YiS-zyIvMOkGQnhge867qvbC2djUH442v4OmZ76VKQdg"
 MAX_SUBS = "2000"
+# VAPID_PRIVATE_JWK is a secret. It is set with a command, never written in this file.
