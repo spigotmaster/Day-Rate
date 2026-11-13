@@ -1,4 +1,5 @@
 import {$,today} from './util.js';
+import {renderNotify,timeChanged} from './notify.js';
 import {E,H,META,VERSION,comp,errorLog,fmt,ls,save,saveMeta,setE,status} from './state.js';
 import {TAGLBL,tagList} from './rate.js';
 import {ac,celebrate,tone} from './celebrate.js';
@@ -21,7 +22,7 @@ export async function deliver(name,text,type,after){
  setTimeout(()=>URL.revokeObjectURL(a.href),4000);after&&after();
 }
 $('#xcsv').onclick=()=>deliver('day-rate-'+today()+'.csv',csv(),'text/csv');
-$('#rtime').onchange=e=>{META.remind=e.target.value;saveMeta()};
+$('#rtime').onchange=e=>{META.remind=e.target.value;saveMeta();timeChanged();renderNotify()};
 $('#rics').onclick=()=>{
  const tm=($('#rtime').value||'20:00').split(':'),hh=tm[0].padStart(2,'0'),mm=(tm[1]||'00').padStart(2,'0'),d0=today().replace(/-/g,'');
  const url=location.href.split('#')[0].split('?')[0],stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
@@ -59,7 +60,7 @@ $('#celTest').onclick=()=>celebrate([{title:'Driven III',desc:'Productivity of 8
 export function renderData(){
  const dm=status.demo;['xcsv','xjson','xcopy','ximp','xundo','onbAgain'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=dm});$('#demoNote').hidden=!dm;
  $('#lastbk').textContent=META.lastBackup?'Last backup: '+new Date(META.lastBackup).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No backup yet. Make one before you trust this app with your days.';
- $('#rtime').value=META.remind||'20:00';
+ $('#rtime').value=META.remind||'20:00';renderNotify();
  $('#hapt').checked=META.haptics;
  $('#bday').value=META.bday?'2000-'+META.bday:'';
  $('#snd').checked=META.sound!==false;

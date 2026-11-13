@@ -4,6 +4,7 @@ import {show} from './nav.js';
 import {showResult} from './result.js';
 import {home,milestone,setPendingMile} from './history.js';
 import {celebrate} from './celebrate.js';
+import {skipToday} from './notify.js';
 import {achSync} from './ach-ui.js';
 
 /* rating flow */
@@ -80,6 +81,7 @@ export function lock(){
  if(isNew){const m=milestone(Object.keys(E).length);if(m){META.mile=m;saveMeta();setPendingMile(m)}}
  const t=tOf(H(e));buzz(t<.33?1:t<.66?2:3);
  showResult(target);
+ if(target===today()&&!status.demo)skipToday(target);
  if(!status.demo)try{const f=achSync();if(f.length)setTimeout(()=>celebrate(f),700)}catch(x){}
 }
 

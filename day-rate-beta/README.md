@@ -1,4 +1,4 @@
-# Day Rate beta 1.18
+# Day Rate beta 1.19
 
 Static PWA, no build step. Upload the whole folder structure (keep `src/` as a folder).
 - `index.html` page markup, `styles.css` all styling
@@ -112,7 +112,15 @@ History now has four modes: Weeks, Year, Recap, Search.
 - Sample mode: `status.demo`. Real days and settings are parked in memory, 42 deterministic sample days load, and `save()` / `saveMeta()` do nothing, so neither storage nor the pre-migration backups can ever see sample data. A banner stays on screen with Exit sample. Export, import and undo are switched off, no celebrations fire, and a reload always returns to the real data.
 - Do not add any new write path (storage, backups, share files) without checking `status.demo`.
 
+## Real notifications (beta 1.19)
+- A daily push notification at the chosen time, skipped on days already rated. Data > Daily reminder > Turn on notifications. Needs the small reminder server in `server/` (setup checklist in `server/README.md`); until `src/config.js` has its address and public key the card says notifications are not set up, and the calendar reminder keeps working.
+- How it works: the phone subscribes to its browser's push service; the server sends an empty push at the chosen time; `sw.js` shows the notification; tapping it opens the app at `#rate`, which goes straight to rating (never over the intro or sample data). Rating today tells the server to skip today. Every app launch refreshes the time zone on the server and notices a lost subscription.
+- The server learns only: push address, reminder time, time zone, which days were rated. Turning notifications off deletes it. Notification state lives in `META.notify` and is deliberately not part of backups (a subscription belongs to one phone).
+- iPhone needs iOS 16.4+ and the Home Screen app, not a Safari tab. Real push could not be tested where this was built: run the checklist in `server/README.md` on a real phone.
+- Tests: `tests/server.test.mjs` (real SQL on SQLite, real signatures), `tests/sw.test.mjs` (the real sw.js in a sandbox), `tests/e2e/notify.py` (HTTPS plus real service worker, fake push service, recording server).
+
 ## Release notes
+- 1.19: real notifications (client, service worker handlers, reminder server template).
 - 1.18: goals and manual expectations replaced by an equation-based expected value (FORECAST.md), with a learned version and a fixed-weight rules version; forecast accuracy card in Insights; explore.py no longer depends on the old goal buttons.
 - 1.17: onboarding intro and sample mode.
 - 1.16: History Recap (month and year, share image) and Search.

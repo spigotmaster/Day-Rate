@@ -74,7 +74,7 @@ with sync_playwright() as pw:
     pg.click('#nd'); pg.wait_for_timeout(200); pg.click('#xdbg'); pg.wait_for_timeout(300)
     clip=pg.evaluate("navigator.clipboard.readText()")
     check('debug info has the logged error',('boom-test' in clip),clip[:120])
-    check('debug info has version and counts',('version: 1.18' in clip and 'days stored: 5' in clip),clip[:160])
+    check('debug info has version and counts',('version: 1.19' in clip and 'days stored: 5' in clip),clip[:160])
     check('debug info never contains notes',('secret note' not in clip))
     pg.click('#xdbgclr'); pg.wait_for_timeout(150); check('error log can be cleared',pg.evaluate("localStorage.getItem('dayrate:errors')")is None); b.close()
 srv.shutdown(); print(f'\n{len(passes)} passed, {len(fails)} failed'); sys.exit(1 if fails else 0)

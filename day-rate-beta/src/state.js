@@ -3,7 +3,7 @@ import {openStore,requestPersistence} from './storage.js';
 import {migrate} from './migrate.js';
 import {createErrorLog} from './errorlog.js';
 
-export const VERSION='1.18';
+export const VERSION='1.19';
 export const KEY='dayrate:v1';
 const safeLS=(()=>{try{return localStorage}catch(e){return {getItem:()=>null,setItem(){},removeItem(){}}}})();
 export const errorLog=createErrorLog({storage:safeLS});

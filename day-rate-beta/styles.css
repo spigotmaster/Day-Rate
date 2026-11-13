@@ -290,3 +290,9 @@ nav .pip[hidden]{display:none}
 #onb .btn:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
 @keyframes onbIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.onbbody{animation:none}}
+
+/* reminder card */
+.calrem{margin:12px 0 0}
+.calrem summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}
+.calrem summary:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+#nStatus{margin:0 0 10px}

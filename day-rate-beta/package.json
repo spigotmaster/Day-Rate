@@ -1,12 +1,12 @@
 {
   "name": "day-rate",
   "private": true,
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "Private daily rating app (PWA)",
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test",
-    "e2e": "python3 tests/e2e/smoke.py . && python3 tests/e2e/explore.py . && python3 tests/e2e/storage.py . && python3 tests/e2e/review.py . && python3 tests/e2e/onboarding.py .",
+    "e2e": "python3 tests/e2e/smoke.py . && python3 tests/e2e/explore.py . && python3 tests/e2e/storage.py . && python3 tests/e2e/review.py . && python3 tests/e2e/onboarding.py . && python3 tests/e2e/notify.py .",
     "lint": "eslint",
     "format": "prettier --write src/storage.js src/migrate.js src/errorlog.js tests"
   },
