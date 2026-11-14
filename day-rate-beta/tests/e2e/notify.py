@@ -62,11 +62,11 @@ with sync_playwright() as pw:
     check('privacy note says what the server learns',('time zone' in pg.inner_text('#nFine')) and ('never' in pg.inner_text('#nFine').lower()))
     pg.click('#nOn'); pg.wait_for_timeout(900)
     sub=[c for c in calls if c['path']=='/subscribe']; tz=pg.evaluate("Intl.DateTimeFormat().resolvedOptions().timeZone")
-    check('turning on registers the push address, time and time zone',len(sub)==1 and sub[0]['body']=={'endpoint':'https://fcm.googleapis.com/fcm/send/test-endpoint-1','time':'20:00','tz':tz},sub)
+    check('turning on registers the push address, time and time zone',len(sub)==1 and sub[0]['body']=={'endpoint':'https://fcm.googleapis.com/fcm/send/test-endpoint-1','time':'20:00','tz':tz,'weekly':False},sub)
     check('subscription is user-visible with a 65 byte key',pg.evaluate("window.__subOpts")=={'uvo':True,'keyLen':65})
     check('status says On with the time',status(pg).startswith('On.') and '20:00' in status(pg),status(pg)); check('button flips to Turn off',pg.inner_text('#nOn')=='Turn off notifications')
     check('state saved on the device',meta(pg).get('notify',{}).get('on') is True)
-    check('server is never sent ratings, notes or tags',all(set(c['body'])<= {'endpoint','time','tz','date'} for c in calls))
+    check('server is never sent ratings, notes or tags',all(set(c['body'])<= {'endpoint','time','tz','date','weekly'} for c in calls))
     # 3. change time
     n0=len(calls); pg.fill('#rtime','19:30'); pg.dispatch_event('#rtime','change'); pg.wait_for_timeout(700)
     check('changing the time updates the server',[c for c in calls[n0:] if c['path']=='/subscribe' and c['body']['time']=='19:30']!=[]); check('new time shown',('19:30' in status(pg)) or ('updated' in status(pg)),status(pg))

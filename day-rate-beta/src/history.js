@@ -3,7 +3,7 @@ import {E,H,META,col,comp,fmt,label,ls,reduce,save,tOf} from './state.js';
 import {show} from './nav.js';
 import {C,renderTags,startRate} from './rate.js';
 import {addD,dayLines,delControl,fillRings,monOf,renderWeek,showResult} from './result.js';
-import {expectCard} from './forecast-ui.js';
+import {badge,catGrade,dayGrade,gpaOfEntries,gpaText,spoken} from './grade-ui.js';
 import {insData} from './insights-ui.js';
 import {renderRecap,renderSearch} from './review-ui.js';
 
@@ -66,7 +66,6 @@ export function showToday(){
  const ks=Object.keys(E).sort(),n=ks.length;
  $('#tsum').textContent=n?'Last rated '+parse(ks[n-1]).toLocaleDateString(undefined,{day:'numeric',month:'short'})+': '+fmt(H(E[ks[n-1]]))+' / 15. '+n+(n===1?' day':' days')+' so far, average '+fmt(Math.round(ks.reduce((a,k)=>a+H(E[k]),0)/n))+' / 15.':'No days rated yet. Your first rating takes about five seconds.';
  $('#rateNow').onclick=()=>startRate(today());
- try{$('#tfc').replaceChildren(expectCard(today()))}catch(x){$('#tfc').replaceChildren()}
  show('today');
 }
 
@@ -85,14 +84,15 @@ export function renderHist(){
   const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),k=ds(d);
   const b=document.createElement('button');b.className='cell';b.dataset.d=k;
   if(k>t)b.classList.add('f');
-  else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k])))}
+  else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';const gd=dayGrade(E[k]);b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k]))+(gd?', grade '+spoken(gd.l):''))}
   else b.setAttribute('aria-label',label(k)+', not rated');
   if(k===(sel||t))b.classList.add('sel');
   b.onclick=()=>{sel=k;const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();markYear();b.scrollIntoView({inline:'nearest',block:'nearest'})};
   g.appendChild(b);
  }
  const hs=keys.map(k=>H(E[k]));
- $('#sum').textContent=keys.length?keys.length+(keys.length===1?' day':' days')+' rated · average '+fmt(Math.round(hs.reduce((a,b)=>a+b,0)/hs.length))+' / 15':'No days rated yet';
+ const ag=keys.length?gpaOfEntries(keys.map(k=>E[k])):null;
+ $('#sum').textContent=keys.length?keys.length+(keys.length===1?' day':' days')+' rated · average '+fmt(Math.round(hs.reduce((a,b)=>a+b,0)/hs.length))+' / 15'+(ag?' · average grade '+gpaText(ag):''):'No days rated yet';
  $('#gw').scrollLeft=1e6;const sc=g.querySelector('.sel');if(sel&&sc)sc.scrollIntoView({inline:'center',block:'nearest'});
  renderDet(sel||t,t);renderWeek();applyMode();
 }
@@ -107,8 +107,10 @@ export function renderDet(k,t){
   const top=document.createElement('div');top.className='dtop';
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('class','rings dr');svg.setAttribute('aria-hidden','true');
   const side=document.createElement('div');
-  const b=document.createElement('div');b.className='big';b.textContent=fmt(H(e))+' / 15';side.appendChild(b);
-  const r=document.createElement('div');r.className='row';r.innerHTML='<span>Mood '+e.m+' ('+fmt(comp(e,'m'))+'/5)</span><span>Productivity '+e.p+' ('+fmt(comp(e,'p'))+'/5)</span><span>Connection '+e.c+' ('+fmt(comp(e,'c'))+'/5)</span>';side.appendChild(r);
+  const b=document.createElement('div');b.className='big';b.textContent=fmt(H(e))+' / 15';
+  const dg=dayGrade(e);if(dg)b.appendChild(badge(dg));side.appendChild(b);
+  const gc=d=>{const g=catGrade(e,d);return g?' \u00b7 '+g.l:''};
+  const r=document.createElement('div');r.className='row';r.innerHTML='<span>Mood '+e.m+' ('+fmt(comp(e,'m'))+'/5'+gc('m')+')</span><span>Productivity '+e.p+' ('+fmt(comp(e,'p'))+'/5'+gc('p')+')</span><span>Connection '+e.c+' ('+fmt(comp(e,'c'))+'/5'+gc('c')+')</span>';side.appendChild(r);
   top.append(svg,side);d.appendChild(top);
   fillRings(svg,e,'rgb('+col(tOf(H(e)))+')');
   const n=document.createElement('input');n.className='noteIn';n.maxLength=140;n.placeholder='One good thing about this day (optional)';n.value=e.note||'';n.setAttribute('aria-label','Note for this day');n.oninput=()=>{E[k].note=n.value;save()};d.appendChild(n);

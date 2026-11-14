@@ -4,7 +4,7 @@ Sends a "How was today?" notification at the time each person chose. It is tiny:
 Notifications on a phone cannot be scheduled by a web app alone. A phone only wakes a web app when a push arrives, so something has to send it. This is that something.
 
 ## What it knows (and does not)
-Stored per phone: the push address, the reminder time (HH:MM), the time zone, the last day it sent, and the last day the app said "already rated".
+Stored per phone: the push address, the reminder time (HH:MM), the time zone, the last day it sent, the last day the app said "already rated", and whether the Sunday weekly grade is switched on (a yes/no flag; the grade itself is worked out on the phone).
 Never received: ratings, notes, tags, backups, or any other app data. Turning notifications off in the app deletes the row. Rows for phones that have not opened the app for 120 days are deleted automatically.
 Update your privacy text to say this.
 
@@ -35,3 +35,6 @@ Steps marked **[HUMAN]** need your accounts or secrets. An AI assistant can prep
 - Only real browser push services are allowed as targets (Google, Apple, Mozilla, Microsoft), so the server cannot be used to send requests elsewhere. Only `ALLOWED_ORIGIN` may call it.
 - Capacity is capped by `MAX_SUBS` (default 2000). One cron run reads every row, which is fine at this size.
 - Tests: `node --test tests/server.test.mjs` runs the real SQL on SQLite and checks the signatures.
+
+## Upgrading to 1.20
+Existing databases need one new column before deploying: `npx wrangler d1 execute day-rate-reminders --remote --file=migrate-1.20.sql`, then `npx wrangler deploy`. Fresh installs get it from `schema.sql`.

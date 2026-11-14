@@ -4,6 +4,7 @@ import {show} from './nav.js';
 import {st} from './rate.js';
 import {addD,rng,w1} from './result.js';
 import {forecastStatsCard} from './forecast-ui.js';
+import {tagNames} from './tags.js';
 import {home} from './history.js';
 
 /* insights UI: all numbers come from insights.js; this block only draws them */
@@ -12,7 +13,7 @@ export const mkEl=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c
 export const n1=v=>v==null?'\u2013':(Math.round(v*10)/10).toFixed(1);
 export const sg=v=>v==null?'\u2013':Math.abs(v)<.05?'0.0':(v>0?'+':'\u2212')+n1(Math.abs(v));
 export const rate=v=>'rgb('+col((v-1)/9)+')';
-export function insData(){return DayRateInsights.analyze(E,today(),{period:insPer,score:r=>E[r.date]?H(E[r.date])/100:null})}
+export function insData(){return DayRateInsights.analyze(E,today(),{period:insPer,score:r=>E[r.date]?H(E[r.date])/100:null,tagNames:tagNames()})}
 $('#insTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;insTab=b.dataset.t;renderInsights();$('#vins .pane').scrollTop=0};
 $('#insPer').onclick=e=>{const b=e.target.closest('button');if(!b)return;insPer=+b.dataset.p;renderInsights()};
 export function msgCard(title,text,extra){const c=mkEl('div','card');c.appendChild(mkEl('h2',null,title));c.appendChild(mkEl('p',null,text));if(extra)c.appendChild(extra);return c}

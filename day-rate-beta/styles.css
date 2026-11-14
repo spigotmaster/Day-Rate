@@ -296,3 +296,27 @@ nav .pip[hidden]{display:none}
 .calrem summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}
 .calrem summary:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
 #nStatus{margin:0 0 10px}
+
+/* letter grades */
+.gr{display:inline-flex;align-items:center;justify-content:center;min-width:1.9em;padding:0 .45em;border:2px solid currentColor;border-radius:999px;font-weight:800;line-height:1.5;font-size:.8em;letter-spacing:.01em;vertical-align:middle}
+.gr.lg{font-size:1.5rem;min-width:2.4em;padding:0 .5em;border-width:3px}
+.gline{display:flex;align-items:center;justify-content:center;gap:10px;font-size:1rem;opacity:.95}
+.gline[hidden]{display:none}
+.wd .wg{font-size:.7rem;font-weight:800;line-height:1}
+.det .big .gr{margin-left:8px;font-size:.5em}
+.srrow .gr{font-size:.75em;margin-left:6px}
+.wkcard .gr{font-size:.75em;margin:0 4px}
+
+/* your own tags */
+.ownrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;flex-basis:100%;margin:0}
+.ownrow input,.ctrow input{font:inherit;color:inherit;background:transparent;border:1.5px solid currentColor;border-radius:999px;padding:7px 14px;min-height:36px;min-width:0;flex:1 1 140px}
+.ownmsg{flex-basis:100%;font-size:.85rem;min-height:0}
+.ownmsg:empty{display:none}
+.card .ownrow{justify-content:flex-start}
+.card .ownrow input,.ctrow input{color:var(--fg);border-color:var(--line)}
+.ctrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px}
+.ctrow p{flex-basis:100%;margin:0}
+.ctrow .acts{display:flex;gap:8px}
+.row2[hidden]{display:none}
+.goal{font-size:.95rem;text-align:center;max-width:32ch;opacity:.95}.goal[hidden]{display:none}
+.goal .gbtn{display:block;margin:6px auto 0;color:inherit;text-align:center;white-space:normal;height:auto;min-height:44px;padding:8px 14px}

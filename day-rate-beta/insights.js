@@ -3,7 +3,7 @@
    analyze(entries, todayStr, opts) -> { status, period, overview, observe[], discover[], act[], highlights[], empty }
    entries : { 'YYYY-MM-DD': {m,p,c,note,updated} }  (the app's own model) or an array of {date,m,p,c,...}
    todayStr: the app's today() string, so the 4am day rollover is respected
-   opts    : { period: 7|30, score: row=>0..15 (the app's own daily score, optional) }
+   opts    : { period: 7|30, score: row=>0..15 (the app's own daily score, optional), tagNames: { id: label } for the person's own tags (optional) }
    Every insight is derived from stored ratings. Nothing is hardcoded. */
 (function(root,factory){
  if(typeof module==='object'&&module.exports)module.exports=factory();
@@ -588,12 +588,12 @@ function insTies(ctx){
 const TAGNAME={sl:'Slept well',ex:'Exercise',ou:'Outdoors',so:'Social',al:'Alcohol',ld:'Heavy workload',un:'Unwell'};
 function insTags(ctx){
  const cr=ctx.comp;if(cr.length<CFG.MIN_PAIRS)return null;
- const rows=[];
- for(const t of Object.keys(TAGNAME)){
+ const rows=[],names=Object.assign({},ctx.tagNames,TAGNAME);
+ for(const t of Object.keys(names)){
   const w=cr.filter(r=>r.tags.includes(t)),o=cr.filter(r=>!r.tags.includes(t));
   if(w.length<4||o.length<4)continue;
   const a=mean(w.map(overallOf)),b=mean(o.map(overallOf));
-  rows.push({label:TAGNAME[t],a,b,delta:a-b,n:w.length});
+  rows.push({label:names[t],a,b,delta:a-b,n:w.length});
  }
  rows.sort((x,y)=>Math.abs(y.delta)-Math.abs(x.delta));
  const top=rows[0];if(!top||Math.abs(top.delta)<CFG.MEANINGFUL)return null;
@@ -723,7 +723,7 @@ function analyze(input,todayStr,opts){
   return out;
  }
  const ctx={rows,comp,today:anchor,realToday:todayStr,score,status,levels:comp.length>=2?levelStats(comp):null,pc:comparePeriods(rows,anchor,period),
-  facts:{rel:{}}};
+  facts:{rel:{}},tagNames:opts.tagNames&&typeof opts.tagNames==='object'?opts.tagNames:{}};
  ctx.adj=!!(ctx.levels&&ctx.levels.m.wb);out.adjusted=ctx.adj;
  out.overview=buildOverview(ctx);
 

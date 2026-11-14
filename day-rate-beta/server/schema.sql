@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS subs (
   tz TEXT NOT NULL,             -- e.g. 'Europe/London'
   last_sent TEXT,               -- app day (YYYY-MM-DD) a reminder was last sent
   skip_date TEXT,               -- app day the app said was already rated
+  weekly INTEGER NOT NULL DEFAULT 0, -- 1 = also push on Sundays even if rated, so the app can show the week's grade (computed on the phone)
   updated INTEGER NOT NULL      -- ms; refreshed every time the app opens
 );

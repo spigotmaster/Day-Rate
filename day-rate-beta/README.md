@@ -2,6 +2,7 @@
 
 Static PWA, no build step. Upload the whole folder structure (keep `src/` as a folder).
 - `index.html` page markup, `styles.css` all styling
+- `grades.js` letter grades (pure, also loaded by the service worker); `src/grade-ui.js` and `src/tags.js` draw grades and manage tags.
 - `src/*.js` the app as ES modules: `util` (dom + dates), `state` (data, scoring, storage wiring), `nav`, `rate`, `result` (result, week recap, delete), `forecast` + `forecast-ui` (expected values), `history`, `trends`, `insights-ui`, `celebrate`, `ach-ui`, `data`, `app` (startup, update banner)
 - `src/onboarding.js` (intro tour and sample mode), `src/demo.js` (sample data generator), `src/review.js` (pure search and recap maths), `src/review-ui.js` (History > Recap and Search screens)
 - `src/storage.js` IndexedDB store with localStorage fallback, `src/migrate.js` schema versions and migrations, `src/errorlog.js` on-device error log
@@ -75,11 +76,25 @@ Two new groups. Rules use raw ratings and calendar days, like the rest.
 - Fun and calendar: Lucky Seven (7, 7, 7), Staircase (each rating one higher than the last), Fresh Start (a day rated on 1 January), Rough Patch Survivor (3+ days in a row averaging 4 or less, then a full week above your average from before them; needs 14 days of history first).
 - Update behaviour: achievements added in a new version that you already qualify for (earned before today) are filled in quietly with their real dates, with no popups. Anything earned today celebrates as usual. Engine version is stored as `achV` in `dayrate:meta`.
 
+## Letter grades, custom tags, weekly grade (beta 1.20)
+- **Grades.** Overall and per category (Mood, Productivity, Connection). A grade is where a day sits among your own days, through a soft curve: the middle is a B, the top quarter is an A range, F is only the bottom 3%. Overall ranks the 0-15 score; a category ranks that rating among your ratings in it. Needs 7 rated days; derived each time, never stored; Data > Settings > Letter grades turns them off. Shown on the result screen, History (detail, week strip, search), week/month/year recaps (average grade on a 4.3 scale, with "up from B") and the share image. Maths and tests: `grades.js`, `tests/grades.test.js`.
+- **Forecast grade.** Under the expected values: "Expected grade B- . Rated B+", and a grade beside each expected rating.
+- **Grade achievements** (new group, engine v3): Honor Roll, Straight A's, Top of the Class, Comeback, Dean's List. They use the grade a day had *when you rated it* (against earlier days only, after 14 days), so an earned grade never moves.
+- **Your own tags.** Up to 12, added from the result screen ("+ Your own") or Data > Your tags (rename, remove). Stored as ids in `META.ctags`; included in backups; Insights and Search use them.
+- **Sunday weekly grade.** Data > Daily reminder > "Sunday: send my week's letter grade". The server only learns an on/off flag; the phone's service worker reads the ratings on the device and builds "Your week: B+, up from C+". Needs a server update (below).
+- **Weekly grade goal (1.21).** Data > Weekly grade goal: N days a week at a chosen grade or better (Monday to Sunday). Progress shows only on today's result screen after rating ("Goal: 2 of 3 days at B+ or better this week, 4 days left", or met / out of reach), never on the Today screen. Saved in backups. Logic: `goalProgress` in `grades.js`.
+- **Suggested goals and the average-week goal (1.21).** After rating (result screen) and in Data, Day Rate suggests a goal you met in about 5 to 7 of your last 8 weeks (`suggestGoal`), and offers "Beat my average week": this week's average grade so far against the mean of your recent weekly GPAs (`avgWeek`). Both need 3 completed weeks with 4+ rated days. Never shown on the Today screen.
+
+### Updating an existing reminder server (needed for the weekly grade)
+1. `cd server && npx wrangler d1 execute day-rate-reminders --remote --file=migrate-1.20.sql`
+2. `npx wrangler deploy`
+Until both are done, turning the weekly option on will fail to save on the server (daily reminders keep working only after step 1, because the new code reads the new column). Do both together, then upload the app.
+
 ## Expected values (beta 1.18)
 Goals and the Expect buttons are gone. Today and the result screen now show an **expected value** for mood, productivity and connection, calculated from your own history by an equation (see `FORECAST.md`).
 - `src/forecast.js` pure maths (baseline + weekday effect + ridge regression on momentum, streaks, mean reversion, other ratings + similar-day correction), `src/forecast-ui.js` the cards. Nothing new is stored.
-- Today (unrated): "Expected today", each rating with a likely range (about 8 in 10 days), a confidence word, and a "Why these numbers" drop-down.
-- Result screen: for the day shown, expected vs rated (using only days before it); for today also "Expected tomorrow".
+- Today (unrated): nothing. As of 1.20 expected values appear only **after** you submit, so they cannot nudge what you rate.
+- Result screen: for the day shown, expected vs rated (using only days before it), each rating with a likely range (about 8 in 10 days), a confidence word and a "Why these numbers" drop-down. There is no "Expected tomorrow" any more, for the same reason.
 - Insights > Observe > Forecast accuracy: how far off the forecast was over the last 7 or 30 days against guessing your average, and your recovery patterns.
 - "Why these numbers" also gives a plain-language version from fixed weights (similar days 40, week so far 20, streak 15, weekday 10, mean reversion 10, other ratings 5). Accuracy compares both with guessing your average.
 - Needs 7 rated days; under 30 is labelled preliminary. A record with gaps is fine (unrated days are treated as unknown).
@@ -122,6 +137,7 @@ History now has four modes: Weeks, Year, Recap, Search.
 ## Release notes
 - 1.19: real notifications (client, service worker handlers, reminder server template).
 - 1.18: goals and manual expectations replaced by an equation-based expected value (FORECAST.md), with a learned version and a fixed-weight rules version; forecast accuracy card in Insights; explore.py no longer depends on the old goal buttons.
+- 1.20: letter grades (overall + category, percentile with a soft curve), grade GPA in recaps and share image, forecast grade, expected values only after rating (and no "expected tomorrow"), grade achievements, custom tags, Sunday weekly-grade notification, duplicate script tags removed from index.html.
 - 1.17: onboarding intro and sample mode.
 - 1.16: History Recap (month and year, share image) and Search.
 - 1.15: index.html split into modules and stylesheet; IndexedDB storage, migrations, error log; Troubleshooting card; service worker precache list covers the new files. The sw.js inside the 1.14 zip was an empty file; this release restores it. If the live site's sw.js is fine, keep your cache number higher than the live one.

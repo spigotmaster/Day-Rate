@@ -5,6 +5,7 @@ import {TAGLBL,renderTags,st,startRate} from './rate.js';
 import {momentCard,nextMile,sel,setSel,showToday} from './history.js';
 import {EXPLEN,expDay,expSync} from './insights-ui.js';
 import {expectCard} from './forecast-ui.js';
+import {badge,catGrade,dayGrade,drawGoal,gpaOfEntries,gradeChange,spoken,topLine} from './grade-ui.js';
 
 /* result */
 export function remember(date){
@@ -21,7 +22,10 @@ export function showResult(date){
  paint($('#rs'),tOf(h));
  $('#rdate').textContent=date===today()?'Today':label(date);
  $('#score').innerHTML=fmt(h)+' <small>/ 15</small>';
- const pt=d=>fmt(comp(e,d))+' / 5';
+ const dg=dayGrade(e),gl=$('#gline');gl.replaceChildren();gl.hidden=!dg;
+ if(dg){const t=document.createElement('span');t.textContent=topLine(dg);gl.append(badge(dg,'lg'),t)}
+ drawGoal($('#goal'),date===today());
+ const pt=d=>{const cg=catGrade(e,d);return fmt(comp(e,d))+' / 5'+(cg?' \u00b7 '+cg.l:'')};
  $('#trio').innerHTML='<div><b>'+e.m+'</b>Mood<br><small>'+pt('m')+'</small></div><div><b>'+e.p+'</b>Productivity<br><small>'+pt('p')+'</small></div><div><b>'+e.c+'</b>Connection<br><small>'+pt('c')+'</small></div>';
  const n=$('#note');n.value=e.note||'';
  n.oninput=()=>{E[date].note=n.value;save()};
@@ -67,13 +71,16 @@ export function weekStrip(box,k,mono,pick,selKey){
  for(let i=0;i<7;i++){
   const dk=addD(mon,i),e=E[dk],b=document.createElement('button'),svg=document.createElementNS(SVGNS,'svg');
   b.type='button';b.className='wd'+(dk===t?' now':'')+(dk===selKey?' sel':'');b.disabled=dk>t;
-  b.setAttribute('aria-label',label(dk)+(e?', score '+fmt(H(e)):dk>t?', not yet':', not rated'));
+  const gd=e?dayGrade(e):null;
+  b.setAttribute('aria-label',label(dk)+(e?', score '+fmt(H(e))+(gd?', grade '+spoken(gd.l):''):dk>t?', not yet':', not rated'));
   svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('aria-hidden','true');
   if(e){const c=mono?'currentColor':'rgb('+col(tOf(H(e)))+')',v=[e.m,e.p,e.c];
    svg.innerHTML=[44,34,24].map((r,j)=>'<circle class="bg" cx="50" cy="50" r="'+r+'"/><circle pathLength="100" cx="50" cy="50" r="'+r+'" style="stroke:'+c+';stroke-dasharray:100;stroke-dashoffset:'+(100-v[j]*10)+';opacity:'+[1,.8,.6][j]+'"/>').join('')}
   else svg.innerHTML='<circle class="empty" cx="50" cy="50" r="40"/>';
   const l=document.createElement('span');l.textContent=DN[i];
-  b.append(svg,l);b.onclick=()=>pick(dk);box.appendChild(b);
+  b.append(svg,l);
+  if(gd){const gs=document.createElement('span');gs.className='wg';gs.setAttribute('aria-hidden','true');gs.textContent=gd.l;b.appendChild(gs)}
+  b.onclick=()=>pick(dk);box.appendChild(b);
  }
 }
 export function renderWeek(){const k=sel||today();weekStrip($('#wk7'),k,false,x=>{const c=$('#grid').querySelector('[data-d="'+x+'"]');if(c)c.click()},k);weekRecap($('#wkrecap'),monOf(k))}
@@ -98,6 +105,9 @@ export function weekRecap(box,wk,quiet){
   tri.appendChild(c);
  }
  card.appendChild(tri);
+ {const gw=gpaOfEntries(days.map(x=>x[1]));
+  if(gw){const gp=pdays.length>=3?gpaOfEntries(pdays.map(x=>x[1])):null,ch=gradeChange(gw,gp),p=document.createElement('p');
+   p.append('Week grade ',badge({l:gw.letter}),' ('+gw.gpa.toFixed(1)+' GPA)'+(ch?' \u00b7 '+ch:'')+'.');card.appendChild(p)}}
  const best=days.reduce((a,b)=>H(b[1])>H(a[1])?b:a);
  add(of+'. Best day: '+sdate(best[0])+' ('+fmt(H(best[1]))+' / 15).');
  if(best[1].note)add('That day: '+best[1].note);

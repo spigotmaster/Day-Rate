@@ -1,13 +1,13 @@
 import {$,parse,today} from './util.js';
 import {E,H,META,col,fmt,tOf} from './state.js';
-import {TAGS} from './rate.js';
+import {TAGLBL as TAGLB,allTags} from './tags.js';
 import {w1} from './result.js';
 import {mkEl} from './insights-ui.js';
 import {ROM} from './ach-ui.js';
 import {renderHist,setHistMode,setSel} from './history.js';
+import {badge,dayGrade,gpaFrom,grader,gradeChange,spoken} from './grade-ui.js';
 import {periodBounds,recap,searchDays,shiftAnchor} from './review.js';
 
-const TAGLB=Object.fromEntries(TAGS);
 const WD=['Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays','Sundays'];
 const DIMS=[['m','Mood'],['p','Productivity'],['c','Connection']];
 const sdate=k=>parse(k).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'});
@@ -35,9 +35,10 @@ function updateSearch(){
  const any=Object.keys(E).length;
  $('#srcount').textContent=!any?'No days yet. Rate a day and it will show up here.':keys.length?keys.length+(keys.length===1?' day found':' days found'):'No days match. Try fewer words or clear a filter.';
  keys.slice(0,S.shown).forEach(k=>{
-  const e=E[k],b=mkEl('button','srrow');b.type='button';
-  b.setAttribute('aria-label',sdate(k)+', score '+fmt(H(e))+'. Open this day.');
+  const e=E[k],b=mkEl('button','srrow'),dg=dayGrade(e);b.type='button';
+  b.setAttribute('aria-label',sdate(k)+', score '+fmt(H(e))+(dg?', grade '+spoken(dg.l):'')+'. Open this day.');
   const h=mkEl('div','sh'),d=mkEl('span',null,sdate(k)),sc=mkEl('span',null,fmt(H(e))+' / 15');
+  if(dg)sc.appendChild(badge(dg));
   const dot=mkEl('i','sw');dot.style.background='rgb('+col(tOf(H(e)))+')';d.prepend(dot);h.append(d,sc);b.appendChild(h);
   b.appendChild(mkEl('div','sr3','Mood '+e.m+' \u00b7 Productivity '+e.p+' \u00b7 Connection '+e.c+((e.tags||[]).length?' \u00b7 '+e.tags.map(x=>TAGLB[x]||x).join(', '):'')));
   if(e.note){const n=mkEl('div','sn');n.appendChild(marked(e.note,words));b.appendChild(n)}
@@ -52,7 +53,7 @@ function buildSearch(box){
  q.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>{S.text=q.value;S.shown=30;updateSearch()},150)};
  box.appendChild(q);
  const tg=mkEl('div','tags');tg.setAttribute('role','group');tg.setAttribute('aria-label','Only days with these tags');
- TAGS.forEach(([id,name])=>{const b=mkEl('button',null,name);b.type='button';b.setAttribute('aria-pressed',S.tags.includes(id));
+ allTags().forEach(([id,name])=>{const b=mkEl('button',null,name);b.type='button';b.setAttribute('aria-pressed',S.tags.includes(id));
   b.onclick=()=>{S.tags=S.tags.includes(id)?S.tags.filter(x=>x!==id):S.tags.concat(id);b.setAttribute('aria-pressed',S.tags.includes(id));S.shown=30;updateSearch()};tg.appendChild(b)});
  box.appendChild(tg);
  const row=mkEl('div','frow');
@@ -63,7 +64,12 @@ function buildSearch(box){
  const c=mkEl('p','sum');c.id='srcount';c.setAttribute('aria-live','polite');box.appendChild(c);
  const r=mkEl('div');r.id='srres';box.appendChild(r);
 }
-export function renderSearch(){const box=$('#srw');if(!built){buildSearch(box);built=true}updateSearch()}
+let builtSig='';
+export function renderSearch(){
+ const box=$('#srw'),sig=allTags().map(x=>x[0]+':'+x[1]).join('|');
+ if(!built||sig!==builtSig){S.tags=S.tags.filter(id=>allTags().some(x=>x[0]===id));buildSearch(box);built=true;builtSig=sig}
+ updateSearch();
+}
 
 /* ---------- recap ---------- */
 const R={kind:'month',anchor:null};
@@ -103,6 +109,8 @@ function shareImage(b,r){
  x.font='600 40px '+F;x.globalAlpha=.85;x.fillText('Day Rate',80,120);x.globalAlpha=1;
  x.font='800 110px '+F;x.fillText(title(b),80,330);
  x.font='500 44px '+F;x.globalAlpha=.9;x.fillText(r.n+' of '+b.span+' days rated'+(b.partial?' so far':''),80,400);x.globalAlpha=1;
+ const ag=gpaFrom(r.gpa);
+ if(ag){x.font='700 52px '+F;x.fillText('Average grade '+ag.letter+' ('+ag.gpa.toFixed(1)+' GPA)',80,500)}
  DIMS.forEach(([d,nm],i)=>{
   const cx=80+i*320;x.font='800 150px '+F;x.fillText(w1(r.avg[d]),cx,700);
   x.font='600 40px '+F;x.fillText(nm,cx,760);
@@ -133,7 +141,7 @@ export function renderRecap(){
  next.disabled=!periodBounds(R.kind,shiftAnchor(R.kind,R.anchor,1),t);
  prev.onclick=()=>{R.anchor=shiftAnchor(R.kind,R.anchor,-1);renderRecap()};next.onclick=()=>{R.anchor=shiftAnchor(R.kind,R.anchor,1);renderRecap()};
  nav.append(prev,h,next);box.appendChild(nav);
- const r=recap(E,b),need=R.kind==='month'?5:14,card=mkEl('div','wkcard');
+ const gf=grader()?e=>grader().overall(e):null,r=recap(E,b,gf),need=R.kind==='month'?5:14,card=mkEl('div','wkcard');
  card.appendChild(mkEl('h3',null,(b.partial?(R.kind==='month'?'Month':'Year')+' so far':(R.kind==='month'?'Month':'Year')+' recap')+' \u00b7 '+r.n+' of '+b.span+(b.span===1?' day':' days')+' rated'));
  const add=x=>{card.appendChild(mkEl('p',null,x))};
  if(r.n<need){add('Rate at least '+need+' days in a '+R.kind+' to get a recap.');box.appendChild(card);return}
@@ -141,6 +149,8 @@ export function renderRecap(){
  DIMS.forEach(([d,nm])=>{const c=document.createElement('div'),v=r.delta?r.delta[d]:null;
   c.appendChild(mkEl('b',null,w1(r.avg[d])));c.appendChild(mkEl('small',null,nm+(v==null?'':Math.abs(v)<.3?' \u00b7 steady':' \u00b7 '+(v>0?'up ':'down ')+w1(Math.abs(v)))));tri.appendChild(c)});
  card.appendChild(tri);
+ {const ag=gpaFrom(r.gpa);
+  if(ag){const pg=gpaFrom(r.prevGpa),ch=gradeChange(ag,pg),p=mkEl('p');p.append('Average grade ',badge({l:ag.letter}),' ('+ag.gpa.toFixed(1)+' GPA)'+(ch?' \u00b7 '+ch:'')+'.');card.appendChild(p)}}
  if(r.months){const wrap=mkEl('div');wrap.appendChild(monthBars(r.months));card.appendChild(wrap)}
  add('Best day: '+sdate(r.best.k)+'. Lowest day: '+sdate(r.worst.k)+'.');
  if(r.best.note)add('Best day note: '+r.best.note);

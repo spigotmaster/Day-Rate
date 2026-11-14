@@ -1,6 +1,7 @@
 import {today,parse,ds} from './util.js';
 import {E,label} from './state.js';
 import {KEYS,NAMES,forecast,backtest,patterns,CFG} from './forecast.js';
+import {grader} from './grade-ui.js';
 
 /* Expected values. The numbers come from forecast.js (an equation over your own history); nothing here is stored. */
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -11,14 +12,20 @@ const sg=v=>(v<0?'\u2212':'+')+f1(Math.abs(v));
 function block(date,title){
  const f=forecast(E,date),box=el('div','fcb'),e=E[date];
  box.appendChild(el('h3',null,title));
+ const gr=grader();
  if(!f.ok){box.appendChild(el('p','fcn','Expected values start after '+f.need+(f.need===1?' more rated day.':' more rated days.')));return box}
  for(const k of KEYS){
   const m=f.metrics[k],row=el('div','fcr');
-  row.appendChild(el('span','fcl',NAMES[k]));
+  const cg=gr&&gr.ofRating(k,m.ev);
+  row.appendChild(el('span','fcl',NAMES[k]+(cg?' \u00b7 '+cg.l:'')));
   row.appendChild(el('span','fcv',f1(m.ev)));
   row.appendChild(el('span','fcg',f1(m.lo)+' to '+f1(m.hi)));
   if(e){const d=e[k]-m.ev;row.appendChild(el('span','fcs','Rated '+e[k]+' \u00b7 '+(Math.abs(d)<.5?'as expected':f1(Math.abs(d))+(d>0?' above':' below'))))}
   box.appendChild(row);
+ }
+ if(gr){
+  const og=gr.ofScore(gr.score({m:f.metrics.m.ev,p:f.metrics.p.ev,c:f.metrics.c.ev})),ag=e?gr.overall(e):null;
+  if(og)box.appendChild(el('p','fcn fcgr','Expected grade '+og.l+(ag?' \u00b7 Rated '+ag.l:'')+'. Grades rank the day among all your days.'));
  }
  box.appendChild(el('p','fcn',(f.prelim?'Preliminary, from '+f.n+' days. ':'From '+f.n+' days. ')+'Confidence: '+KEYS.map(k=>NAMES[k]+' '+f.metrics[k].confLabel.toLowerCase()).join(', ')+'. Range covers about 8 in 10 days.'));
  const why=el('details','fcw'),sm=el('summary',null,'Why these numbers');why.appendChild(sm);
@@ -34,10 +41,12 @@ function block(date,title){
  box.appendChild(why);
  return box;
 }
+/* Only shown for a day that already has ratings, so an expected value can never nudge what you rate. (There is no
+   "expected tomorrow" for the same reason: you would see it before rating that day.) */
 export function expectCard(date){
- const box=el('div','fc'),t=today(),rated=!!E[date];
- box.appendChild(block(date,date===t?(rated?'Expected for today':'Expected today'):'Expected for '+label(date)));
- if(date===t&&rated)box.appendChild(block(addD(date,1),'Expected tomorrow'));
+ const box=el('div','fc'),t=today();
+ if(!E[date])return box;
+ box.appendChild(block(date,date===t?'Expected for today':'Expected for '+label(date)));
  return box;
 }
 

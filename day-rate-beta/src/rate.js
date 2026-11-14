@@ -6,6 +6,8 @@ import {home,milestone,setPendingMile} from './history.js';
 import {celebrate} from './celebrate.js';
 import {skipToday} from './notify.js';
 import {achSync} from './ach-ui.js';
+import {TAGLBL,TAGS,addCustomTag,allTags,tagList,MAX_LEN,customTags,MAX_CUSTOM} from './tags.js';
+export {TAGLBL,TAGS,tagList};
 
 /* rating flow */
 export const DIM=[
@@ -57,18 +59,34 @@ $('#plus').onclick=()=>setVal(vals[step]+1);
 $('#lock').onclick=()=>lock();
 $('#num').addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'){e.preventDefault();setVal(vals[step]+1)}if(e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();setVal(vals[step]-1)}});
 $('#back').onclick=()=>{if(step>0){step--;renderStep()}else home()};
-export const TAGS=[['sl','Slept well'],['ex','Exercise'],['ou','Outdoors'],['so','Social'],['al','Alcohol'],['ld','Heavy workload'],['un','Unwell']];
-export const TAGLBL=Object.fromEntries(TAGS);
-export const tagList=a=>TAGS.map(x=>x[0]).filter(id=>a.includes(id));
 export function renderTags(date,box){
  box=box||$('#tags');box.innerHTML='';
  const l=document.createElement('div');l.className='lbl';l.textContent='What shaped '+(date===today()?'today':'this day')+'? (optional)';box.appendChild(l);
- for(const [id,name] of TAGS){
+ for(const [id,name] of allTags()){
   const b=document.createElement('button'),set=on=>{b.setAttribute('aria-pressed',on);b.textContent=(on?'\u2713 ':'')+name};
   b.type='button';set((E[date].tags||[]).includes(id));
   b.onclick=()=>{const cur=E[date].tags||[],nx=tagList(cur.includes(id)?cur.filter(x=>x!==id):cur.concat(id));if(nx.length)E[date].tags=nx;else delete E[date].tags;save();set(nx.includes(id));buzz(1)};
   box.appendChild(b);
  }
+ const add=document.createElement('button');add.type='button';add.textContent='+ Your own';add.setAttribute('aria-label','Add a tag of your own');
+ add.onclick=()=>ownTag(date,box,add);box.appendChild(add);
+}
+/* inline "add your own tag": a small field in place of the button. Adds the tag and switches it on for this day. */
+function ownTag(date,box,btn){
+ const row=document.createElement('form'),inp=document.createElement('input'),go=document.createElement('button'),no=document.createElement('button'),msg=document.createElement('div');
+ row.className='ownrow';inp.type='text';inp.maxLength=MAX_LEN;inp.placeholder='Name your tag';inp.setAttribute('aria-label','Name for your new tag');inp.autocomplete='off';
+ go.type='submit';go.textContent='Add';no.type='button';no.textContent='Cancel';msg.className='ownmsg';msg.setAttribute('role','status');
+ if(customTags().length>=MAX_CUSTOM){msg.textContent='You can have up to '+MAX_CUSTOM+' tags of your own. Remove one in Data > Your tags.';row.replaceChildren(msg,no)}
+ else row.append(inp,go,no,msg);
+ no.onclick=()=>{row.replaceWith(btn);btn.focus()};
+ row.onsubmit=ev=>{
+  ev.preventDefault();
+  const r=addCustomTag(inp.value);
+  if(r.err){msg.textContent=r.err;inp.focus();return}
+  const cur=E[date].tags||[];E[date].tags=tagList(cur.concat(r.id));save();buzz(1);
+  renderTags(date,box);
+ };
+ btn.replaceWith(row);if(inp.isConnected)inp.focus();
 }
 export function lock(){
  down=false;

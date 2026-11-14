@@ -73,3 +73,7 @@ Roughly 1 to 2 years of daily data. Candidates in order of effort: (1) gradient-
 
 ## Limits
 One person's history is short and noisy. Ratings are whole numbers, so the range is wider than it needs to be for a continuous quantity. Nothing outside the ratings (sleep, events, weather) is known. Treat the numbers as a calibrated guess, not a promise.
+
+
+## Where it is shown (1.20)
+Only for a day that already has ratings (the result screen), never before you rate and never for tomorrow, so the number cannot influence the rating. A letter grade for the expected values is worked out the same way as grades for real days (grades.js).

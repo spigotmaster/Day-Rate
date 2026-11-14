@@ -44,10 +44,16 @@ function rateLink(){
  openRate();
 }
 function openRate(){if(status.demo||!status.ready||!$('#onb').hidden||E[today()])return;startRate(today())}
-addEventListener('hashchange',rateLink);
-if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data==='rate')openRate()});
+function weekLink(){
+ if(location.hash!=='#week')return false;
+ try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+ if(!status.demo&&status.ready&&$('#onb').hidden){setSel(null);show('hist')}
+ return true;
+}
+addEventListener('hashchange',()=>{if(!weekLink())rateLink()});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data==='rate')openRate();if(e.data==='week')weekLink()});
 errorLog.install(window);
 (async()=>{
- try{await initStore();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home();maybeOnboard();rateLink();refreshNotify()}
+ try{await initStore();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home();maybeOnboard();if(!weekLink())rateLink();refreshNotify()}
  catch(e){errorLog.add('boot',e);alert('Day Rate could not load your data, so nothing was changed. Close and reopen the app. If this repeats, use Data > Copy debug info.')}
 })();

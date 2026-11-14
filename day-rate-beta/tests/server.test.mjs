@@ -67,7 +67,7 @@ test('subscribe stores only endpoint, time and zone; resubscribing updates inste
   assert.strictEqual((await post(e, '/subscribe', { endpoint: EP, time: '20:00', tz: 'Europe/London' })).status, 200);
   assert.strictEqual((await post(e, '/subscribe', { endpoint: EP, time: '21:30', tz: 'Europe/London' })).status, 200);
   const r = rows(e); assert.strictEqual(r.length, 1); assert.strictEqual(r[0].time, '21:30');
-  assert.deepStrictEqual(Object.keys(r[0]).sort(), ['endpoint', 'id', 'last_sent', 'skip_date', 'time', 'tz', 'updated']);
+  assert.deepStrictEqual(Object.keys(r[0]).sort(), ['endpoint', 'id', 'last_sent', 'skip_date', 'time', 'tz', 'updated', 'weekly']);
 });
 test('subscribe rejects bad input', async () => {
   const e = await env(), ok = { endpoint: EP, time: '20:00', tz: 'UTC' };
@@ -141,4 +141,22 @@ test('schedule: people who have not opened the app for 120 days are removed', as
   e.DB.raw.prepare('UPDATE subs SET updated = ?').run(at('2026-01-01T00:00:00Z'));
   const p = pusher(); await runSchedule(e, at('2026-11-08T20:00:00Z'), p.send);
   assert.strictEqual(rows(e).length, 0); assert.strictEqual(p.calls.length, 0);
+});
+
+test('weekly flag is stored as 0/1 and updated on resubscribe', async () => {
+  const e = await env();
+  await post(e, '/subscribe', { endpoint: EP, time: '20:00', tz: 'UTC' });
+  assert.strictEqual(rows(e)[0].weekly, 0);
+  await post(e, '/subscribe', { endpoint: EP, time: '20:00', tz: 'UTC', weekly: true });
+  assert.strictEqual(rows(e)[0].weekly, 1);
+  await post(e, '/subscribe', { endpoint: EP, time: '20:00', tz: 'UTC', weekly: false });
+  assert.strictEqual(rows(e)[0].weekly, 0);
+});
+test('isDue weekly: on a Sunday the push goes out even if today is rated; other days still skip', () => {
+  const s = { time: '20:00', tz: 'UTC', last_sent: null, skip_date: '2026-11-15', weekly: 1 };   // 2026-11-15 is a Sunday
+  assert.ok(isDue(s, at('2026-11-15T20:00:00Z')));
+  assert.ok(!isDue({ ...s, weekly: 0 }, at('2026-11-15T20:00:00Z')));
+  assert.ok(!isDue({ ...s, last_sent: '2026-11-15' }, at('2026-11-15T20:00:00Z')));        // still once a day
+  const sat = { ...s, skip_date: '2026-11-14' };                                            // Saturday, rated
+  assert.ok(!isDue(sat, at('2026-11-14T20:00:00Z')));
 });

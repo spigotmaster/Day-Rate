@@ -31,7 +31,10 @@ export const appDay = (ms, tz) => localParts(ms - 4 * 3600e3, tz).date;
 export function isDue(sub, ms, windowMin = 15) {
   const lp = localParts(ms, sub.tz), [h, m] = sub.time.split(':').map(Number), at = h * 60 + m, day = appDay(ms, sub.tz);
   if (lp.minutes < at || lp.minutes >= at + windowMin) return false;
-  return sub.last_sent !== day && sub.skip_date !== day;
+  if (sub.last_sent === day) return false;
+  /* weekly summary: on a Sunday the push still goes out when today is already rated, because the phone shows the week's grade then */
+  const sunday = new Date(day + 'T00:00:00Z').getUTCDay() === 0;
+  return sub.skip_date !== day || (!!sub.weekly && sunday);
 }
 
 export async function sha256Hex(s) {

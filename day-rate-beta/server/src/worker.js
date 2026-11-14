@@ -23,13 +23,14 @@ export async function handleFetch(req, env) {
 
   if (url.pathname === '/subscribe') {
     if (!validTime(b.time) || !validTz(b.tz)) return json({ error: 'bad time or time zone' }, 400, c);
+    const weekly = b.weekly ? 1 : 0;
     const have = await env.DB.prepare('SELECT id FROM subs WHERE id = ?').bind(id).first();
     if (!have) {
       const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM subs').first();
       if (n && n.n >= Number(env.MAX_SUBS || 2000)) return json({ error: 'full' }, 503, c);
-      await env.DB.prepare('INSERT INTO subs (id, endpoint, time, tz, updated) VALUES (?, ?, ?, ?, ?)').bind(id, b.endpoint, b.time, b.tz, now).run();
+      await env.DB.prepare('INSERT INTO subs (id, endpoint, time, tz, weekly, updated) VALUES (?, ?, ?, ?, ?, ?)').bind(id, b.endpoint, b.time, b.tz, weekly, now).run();
     } else {
-      await env.DB.prepare('UPDATE subs SET time = ?, tz = ?, updated = ? WHERE id = ?').bind(b.time, b.tz, now, id).run();
+      await env.DB.prepare('UPDATE subs SET time = ?, tz = ?, weekly = ?, updated = ? WHERE id = ?').bind(b.time, b.tz, weekly, now, id).run();
     }
     return json({ ok: true }, 200, c);
   }
@@ -45,7 +46,7 @@ export async function handleFetch(req, env) {
 export async function runSchedule(env, nowMs = Date.now(), send = fetch) {
   const out = { checked: 0, sent: 0, removed: 0, failed: 0 };
   await env.DB.prepare('DELETE FROM subs WHERE updated < ?').bind(nowMs - 120 * 86400e3).run(); // people who stopped opening the app
-  const { results } = await env.DB.prepare('SELECT id, endpoint, time, tz, last_sent, skip_date FROM subs').all();
+  const { results } = await env.DB.prepare('SELECT id, endpoint, time, tz, last_sent, skip_date, weekly FROM subs').all();
   for (const s of results || []) {
     out.checked++;
     if (!isDue(s, nowMs)) continue;

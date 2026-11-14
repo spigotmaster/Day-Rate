@@ -3,7 +3,7 @@ import {openStore,requestPersistence} from './storage.js';
 import {migrate} from './migrate.js';
 import {createErrorLog} from './errorlog.js';
 
-export const VERSION='1.19';
+export const VERSION='1.21';
 export const KEY='dayrate:v1';
 const safeLS=(()=>{try{return localStorage}catch(e){return {getItem:()=>null,setItem(){},removeItem(){}}}})();
 export const errorLog=createErrorLog({storage:safeLS});
@@ -15,7 +15,8 @@ const lsw=(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){errorLog.ad
 const touch=()=>{rev++;lsw('dayrate:rev',String(rev))};
 function persist(){if(!store)return;Promise.all([store.set('entries',E),store.set('meta',META),store.set('rev',rev)]).catch(e=>errorLog.add('idb',e))}
 export let E={};
-export function save(){recalc();if(status.ready&&!status.readOnly&&!status.demo){lsw(KEY,JSON.stringify(E));touch();persist()}if(curView==='ins'&&hooks.renderInsights)hooks.renderInsights()}
+export let gEpoch=0;
+export function save(){recalc();gEpoch++;if(status.ready&&!status.readOnly&&!status.demo){lsw(KEY,JSON.stringify(E));touch();persist()}if(curView==='ins'&&hooks.renderInsights)hooks.renderInsights()}
 export const ls=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 export let META={haptics:true,sound:true},curView='res';
 export const saveMeta=()=>{if(!status.ready||status.readOnly||status.demo)return;lsw('dayrate:meta',JSON.stringify(META));touch();persist()};
@@ -42,7 +43,7 @@ export function tick(){if(!META.haptics)return;try{navigator.vibrate&&navigator.
 export function buzz(n){for(let i=0;i<n;i++)setTimeout(tick,i*70)}
 
 export const hooks={};
-export const setE=v=>{E=v};
+export const setE=v=>{E=v;gEpoch++};
 export const setView=v=>{curView=v};
 
 const lsJSON=k=>{try{const v=localStorage.getItem(k);return v==null?undefined:JSON.parse(v)}catch(e){errorLog.add('read',e,k);return undefined}};

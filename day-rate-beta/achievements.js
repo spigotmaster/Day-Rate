@@ -7,9 +7,9 @@
    Each achievement produces a "track": [[date, value], ...] where value never decreases.
    A tier is earned on the first date the value reaches its target. */
 (function(root,factory){
- if(typeof module==='object'&&module.exports)module.exports=factory();
- else root.DayRateAchievements=factory();
-})(typeof self!=='undefined'?self:this,function(){
+ if(typeof module==='object'&&module.exports)module.exports=factory(require('./grades.js'));
+ else root.DayRateAchievements=factory(root.DayRateGrades);
+})(typeof self!=='undefined'?self:this,function(G){
 'use strict';
 
 const EPS=1e-9;
@@ -36,6 +36,9 @@ function prep(entries){
 function build(days,todayStr){
  const byN=new Map(),months=new Map();
  days.forEach(x=>{byN.set(x.n,x);const k=x.d.slice(0,7);if(!months.has(k))months.set(k,[]);months.get(k).push(x)});
+ /* grade points as each day stood when it was rated (grades.js causal): only earlier days count, and only after 14 days of history */
+ const cg=G?G.causal(days.map(x=>x.a),14):[];
+ days.forEach((x,i)=>{x.gp=cg[i]?cg[i].pts:null});
  return {days,byN,months,keys:[...months.keys()].sort(),tk:todayStr.slice(0,7),todayN:dnum(todayStr)};
 }
 
@@ -325,8 +328,29 @@ add('rough_patch','fun','Rough Patch Survivor',n=>'Three or more days in a row a
  return t;
 });since2();
 
+/* Added in engine version 3. Grades. Each day is graded as it stood when it was rated (against the days up to then, once 14 exist),
+   so a grade you earned never moves when your record grows. Uses the same percentile bands as the app (grades.js). */
+const since3=()=>{A[A.length-1].v=3};
+const atLeast=(x,v)=>x.gp!=null&&x.gp>=v-EPS;
+add('honor_roll','grades','Honor Roll',n=>dy(n)+' in a row graded B+ or better',[5,10,21],
+ c=>streak(c.days,(x,p,r,cons)=>atLeast(x,3.3)?((cons&&r>0)?r+1:1):0));since3();
+add('straight_as','grades',"Straight A's",n=>dy(n)+' in a row graded A- or better',[3,5,8],
+ c=>streak(c.days,(x,p,r,cons)=>atLeast(x,3.7)?((cons&&r>0)?r+1:1):0));since3();
+add('top_of_class','grades','Top of the Class',n=>'An A+ day, '+n+(n===1?' time':' times'),[1,5,15],
+ c=>counter(c.days,x=>atLeast(x,4.3)));since3();
+add('comeback','grades','Comeback',n=>'A D or F day followed straight away by an A- or better day, '+n+(n===1?' time':' times'),[1,3,10],c=>{
+ const t=[];let n=0,prev=null;
+ for(const x of c.days){if(prev&&x.n-prev.n===1&&prev.gp!=null&&prev.gp<=1+EPS&&atLeast(x,3.7)){n++;t.push([x.d,n])}prev=x}
+ return t;
+});since3();
+add('deans_list','grades',"Dean's List",n=>'A complete month with a B+ average or better, '+n+(n===1?' time':' times')+' (15 graded days needed in the month)',[1,3,6],c=>{
+ const t=[];let n=0;
+ eachMonth(c,(k,arr)=>{const g=arr.filter(x=>x.gp!=null);if(g.length>=15&&g.reduce((s,x)=>s+x.gp,0)/g.length>=3.3-EPS){n++;t.push([lastDay(k),n])}});
+ return t;
+});since3();
+
 const GROUPS=[
- ['highs','Highs'],['streaks','Streaks'],['growth','Growth'],['balance','Balance and variety'],['bw','Best and worst days'],['habit','Showing up'],['fun','Fun and calendar']
+ ['highs','Highs'],['streaks','Streaks'],['growth','Growth'],['balance','Balance and variety'],['bw','Best and worst days'],['grades','Grades'],['habit','Showing up'],['fun','Fun and calendar']
 ];
 
 function evaluate(entries,todayStr,extra){
@@ -341,5 +365,5 @@ function evaluate(entries,todayStr,extra){
  });
 }
 
-return {evaluate,GROUPS,CFG:{count:A.length,v:2}};
+return {evaluate,GROUPS,CFG:{count:A.length,v:3}};
 });

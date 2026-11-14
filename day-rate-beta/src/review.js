@@ -50,15 +50,19 @@ export function shiftAnchor(kind, anchor, dir) {
   return Math.floor(t / 12) + '-' + pad((t % 12) + 1);
 }
 
-export function recap(E, b) {
+/* gradeOf (optional): entry -> {pts} | null. When given, the result also carries the average grade points (gpa) of the period
+   and of the comparison period (prevGpa). Pure: the caller decides what a grade is. */
+export function recap(E, b, gradeOf) {
   const pick = (a, z) => Object.keys(E).sort().filter((k) => k >= a && k <= z && E[k]).map((k) => [k, E[k]]);
   const rows = pick(b.start, b.end), prows = pick(b.pStart, b.pEnd);
   const mean = (rs, f) => (rs.length ? rs.reduce((s, x) => s + f(x[1]), 0) / rs.length : null);
   const tri = (rs) => ({ m: mean(rs, (e) => e.m), p: mean(rs, (e) => e.p), c: mean(rs, (e) => e.c) });
   const sum = (e) => e.m + e.p + e.c;
   const out = { n: rows.length, span: b.span, avg: tri(rows), prevN: prows.length, delta: null, best: null, worst: null,
-    bestWeekday: null, worstWeekday: null, longestRun: 0, topTags: [], months: null };
+    bestWeekday: null, worstWeekday: null, longestRun: 0, topTags: [], months: null, gpa: null, prevGpa: null };
   if (!rows.length) return out;
+  const gp = (rs) => { if (typeof gradeOf !== 'function') return null; const v = rs.map((x) => gradeOf(x[1])).filter(Boolean); return v.length ? v.reduce((s, g) => s + g.pts, 0) / v.length : null; };
+  out.gpa = gp(rows); out.prevGpa = prows.length >= 3 ? gp(prows) : null;
   if (prows.length >= 3) { const p = tri(prows); out.delta = { m: out.avg.m - p.m, p: out.avg.p - p.p, c: out.avg.c - p.c }; }
   let best = rows[0], worst = rows[0];
   for (const r of rows) { if (sum(r[1]) > sum(best[1])) best = r; if (sum(r[1]) < sum(worst[1])) worst = r; }

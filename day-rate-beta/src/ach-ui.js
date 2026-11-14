@@ -16,7 +16,7 @@ export function achSync(){
   a.tiers.forEach(t=>{
    const key=a.id+'#'+t.i;
    t.label=a.multi?a.name+' '+ROM[t.i]:a.name;
-   if(t.date&&!META.ach[key]){META.ach[key]=t.date;/* first run, or an achievement added since the last sync that was earned before today: backfill quietly */if(!(first||((a.v||1)>from&&t.date<td))){META.achNew.push(key);fresh.push({key,title:t.label,desc:t.desc,date:t.date,level:t.i+1,levels:a.tiers.length})}}
+   if(t.date&&!META.ach[key]){META.ach[key]=t.date;/* first run, or an achievement added since the last sync that was earned before today: backfill quietly */if(!(first||(a.group==='grades'&&META.grades===false)||((a.v||1)>from&&t.date<td))){META.achNew.push(key);fresh.push({key,title:t.label,desc:t.desc,date:t.date,level:t.i+1,levels:a.tiers.length})}}
    t.date=META.ach[key]||null;
    t.isNew=META.achNew.indexOf(key)>=0;
   });
@@ -33,7 +33,7 @@ $('#achF').onclick=e=>{const b=e.target.closest('button');if(!b)return;achF=b.da
 export function renderAch(keep){
  const body=$('#achBody');body.innerHTML='';
  if(typeof DayRateAchievements==='undefined'){body.appendChild(msgCard('Achievements could not load','Close and reopen the app to refresh it. Your ratings are safe.'));return}
- let r;try{achSync();r=achSync.last}catch(e){body.appendChild(msgCard('Achievements hit a problem','Your ratings are safe. Try reopening the app.'));return}
+ let r;try{achSync();r=achSync.last.filter(a=>!(a.group==='grades'&&META.grades===false))}catch(e){body.appendChild(msgCard('Achievements hit a problem','Your ratings are safe. Try reopening the app.'));return}
  [...$('#achF').children].forEach(b=>{const on=b.dataset.f===achF;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
  const all=r.reduce((n,a)=>n+a.tiers.length,0),got=r.reduce((n,a)=>n+a.tiers.filter(t=>t.date).length,0);
  $('#achSub').textContent=got+' of '+all+' milestones earned \u00b7 long-term, so most take months';

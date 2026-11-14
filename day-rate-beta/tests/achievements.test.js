@@ -124,11 +124,12 @@ test('Rough Patch Survivor: 3 low days then a better week, dated 7 days after th
 });
 test('Engine version and new-achievement flags',()=>{
  const {CFG}=require('../achievements.js');
- assert.strictEqual(CFG.v,2);
+ assert.strictEqual(CFG.v,3);
  const r=evaluate({},'2026-03-01');
  assert.strictEqual(get(r,'driven').v,1);
  assert.strictEqual(get(r,'centurion').v,2);
- assert.ok(r.every(a=>['highs','streaks','growth','balance','bw','habit','fun'].includes(a.group)));
+ ['honor_roll','straight_as','top_of_class','comeback','deans_list'].forEach(id=>assert.strictEqual(get(r,id).v,3,id));
+ assert.ok(r.every(a=>['highs','streaks','growth','balance','bw','grades','habit','fun'].includes(a.group)));
 });
 
 test('Fresh Start: birthday counts when set, and only then',()=>{
@@ -136,4 +137,49 @@ test('Fresh Start: birthday counts when set, and only then',()=>{
  assert.strictEqual(get(evaluate(E,'2026-06-01'),'fresh_start').have,0);
  assert.strictEqual(get(evaluate(E,'2026-06-01',{bday:'05-17'}),'fresh_start').tiers[0].date,'2026-05-17');
  assert.strictEqual(get(evaluate(E,'2026-06-01',{bday:'bad'}),'fresh_start').have,0);
+});
+
+/* ---- grades (engine v3): graded as rated, against earlier days only, after 14 days of history ---- */
+const flat=(n,v)=>make(n,()=>v);
+function stepUp(base,extra){ // 14 plain days, then `extra` tens
+ return make(base+extra,i=>i<base?[5,5,5]:[10,10,10]);
+}
+test('Grades: nothing counts before 14 days of history',()=>{
+ const r=evaluate(flat(13,[9,9,9]),ds(30));
+ ['honor_roll','straight_as','top_of_class','comeback','deans_list'].forEach(id=>assert.strictEqual(get(r,id).have,0,id));
+});
+test('Grades: Top of the Class is the first day clearly above everything before it',()=>{
+ const r=evaluate(stepUp(14,3),ds(40));
+ const t=get(r,'top_of_class');
+ assert.strictEqual(t.tiers[0].date,ds(14));
+ assert.strictEqual(t.have,1); // the second ten only ties with the first, so it grades A, not A+
+});
+test('Grades: Honor Roll and Straight A\'s count consecutive graded days',()=>{
+ const E=stepUp(14,21);
+ const hr=get(evaluate(E,ds(60)),'honor_roll'),sa=get(evaluate(E,ds(60)),'straight_as');
+ assert.strictEqual(hr.tiers[0].date,ds(18));   // 5th day in a row
+ assert.strictEqual(hr.tiers[2].date,ds(34));   // 21st day in a row, still B+ or better
+ assert.strictEqual(sa.tiers[2].date,ds(21));   // 8th day in a row at A- or better
+ assert.strictEqual(sa.have,14);                // the 15th ten slips to B+
+ const gap=stepUp(14,21);delete gap[ds(20)];
+ assert.ok(get(evaluate(gap,ds(60)),'honor_roll').have<21);
+});
+test('Grades: Comeback needs a D or F day, then an A- or better day straight after',()=>{
+ const E=make(16,i=>i<14?(i%2?[6,6,6]:[5,5,5]):i===14?[1,1,1]:[10,10,10]);
+ assert.strictEqual(get(evaluate(E,ds(40)),'comeback').tiers[0].date,ds(15));
+ const F=make(17,i=>i<14?(i%2?[6,6,6]:[5,5,5]):i===14?[1,1,1]:i===15?[5,5,5]:[10,10,10]);
+ assert.strictEqual(get(evaluate(F,ds(40)),'comeback').have,0);
+});
+test('Grades: Dean\'s List needs a complete month, 15 graded days, B+ average',()=>{
+ const E=make(31,i=>i<14?[5,5,5]:[10,10,10]);
+ const d=get(evaluate(E,'2026-03-01'),'deans_list');
+ assert.strictEqual(d.tiers[0].date,'2026-01-31');
+ assert.strictEqual(get(evaluate(E,'2026-01-31'),'deans_list').have,0); // the month is not over yet
+ assert.strictEqual(get(evaluate(make(31,()=>[6,6,6]),'2026-03-01'),'deans_list').tiers[0].date,null); // all equal days grade B, which is 3.0, under B+
+});
+test('Grades: earned grades never move when later days are added',()=>{
+ const E=stepUp(14,21),G=stepUp(14,21);
+ for(let i=35;i<70;i++)G[ds(i)]={m:1,p:1,c:1};
+ const a=evaluate(E,ds(80)),b=evaluate(G,ds(80));
+ ['honor_roll','straight_as','top_of_class'].forEach(id=>get(a,id).tiers.forEach((t,i)=>assert.strictEqual(get(b,id).tiers[i].date,t.date,id)));
 });

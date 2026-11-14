@@ -14,6 +14,7 @@ export function support(){
  return {ok:true,why:''};
 }
 const tz=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch(e){return 'UTC'}};
+const weeklyOn=()=>!!(META.notify&&META.notify.weekly);
 const timeVal=()=>($('#rtime')&&$('#rtime').value)||META.remind||'20:00';
 function keyBytes(){
  const s=PUSH.key.replace(/-/g,'+').replace(/_/g,'/'),b=atob(s+'='.repeat((4-s.length%4)%4)),a=new Uint8Array(b.length);
@@ -25,6 +26,12 @@ async function post(path,body){
   const r=await fetch(PUSH.url+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),signal:c.signal});
   if(!r.ok)throw new Error('server '+r.status);
  }finally{clearTimeout(t)}
+}
+function sameKey(sub){
+ try{
+  const k=sub.options&&sub.options.applicationServerKey;if(!k)return true;
+  const a=new Uint8Array(k),b=keyBytes();return a.length===b.length&&a.every((v,i)=>v===b[i]);
+ }catch(e){return true}
 }
 async function registration(){
  return Promise.race([navigator.serviceWorker.ready,new Promise((_,no)=>setTimeout(()=>no(new Error('service worker not ready')),6000))]);
@@ -47,9 +54,11 @@ export async function enable(){
   if(res!=='granted'&&perm!=='granted')return say(res==='denied'||perm==='denied'?'denied':'Notifications were not allowed, so nothing was turned on.',6000);
   const reg=await registration();
   let sub=await reg.pushManager.getSubscription();
+  /* a subscription made with a different key (config.js changed) can never receive our pushes: replace it */
+  if(sub&&!sameKey(sub)){try{await sub.unsubscribe()}catch(e){}sub=null}
   if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes()});
-  await post('/subscribe',{endpoint:sub.endpoint,time:timeVal(),tz:tz()});
-  META.notify={on:true,since:Date.now()};saveMeta();say('',0);
+  await post('/subscribe',{endpoint:sub.endpoint,time:timeVal(),tz:tz(),weekly:weeklyOn()});
+  META.notify={on:true,since:Date.now(),weekly:weeklyOn()};saveMeta();say('',0);
  }catch(e){errorLog.add('notify',e,'enable');say('Could not turn reminders on. Check your connection and try again.',8000)}
 }
 export async function disable(){
@@ -59,12 +68,22 @@ export async function disable(){
  }catch(e){errorLog.add('notify',e,'disable')}
  META.notify={on:false};saveMeta();say('',0);
 }
+/* Sunday weekly grade: the server only learns this on/off flag. The grade itself is worked out on the phone. */
+export async function setWeekly(on){
+ if(status.demo||!(META.notify&&META.notify.on))return;
+ META.notify.weekly=!!on;saveMeta();
+ try{
+  const sub=await (await registration()).pushManager.getSubscription();
+  if(sub)await post('/subscribe',{endpoint:sub.endpoint,time:timeVal(),tz:tz(),weekly:!!on});
+  say(on?'Sunday weekly grade is on.':'Sunday weekly grade is off.',3000);
+ }catch(e){errorLog.add('notify',e,'weekly');say('Could not update that setting. It will sync next time the app opens.',6000)}
+}
 export async function timeChanged(){
  if(!(META.notify&&META.notify.on)||status.demo)return;
  try{
   const sub=await (await registration()).pushManager.getSubscription();
   if(!sub)return renderNotify();
-  await post('/subscribe',{endpoint:sub.endpoint,time:timeVal(),tz:tz()});say('Reminder time updated.',3000);
+  await post('/subscribe',{endpoint:sub.endpoint,time:timeVal(),tz:tz(),weekly:weeklyOn()});say('Reminder time updated.',3000);
  }catch(e){errorLog.add('notify',e,'time');say('Could not update the reminder time. It will sync next time the app opens.',6000)}
 }
 /* Tell the server today is already rated so no reminder goes out. Fire and forget; the reminder just arrives if this fails. */
@@ -81,9 +100,10 @@ export async function refresh(){
  try{
   const sub=await (await registration()).pushManager.getSubscription();
   await syncPerm();
-  if(!sub||perm!=='granted'){META.notify={on:true,lost:true};saveMeta();return renderNotify()}
-  if(META.notify.lost){META.notify={on:true,since:META.notify.since};saveMeta()}
-  await post('/subscribe',{endpoint:sub.endpoint,time:META.remind||'20:00',tz:tz()});
+  if(sub&&!sameKey(sub)){META.notify={on:true,lost:true,weekly:weeklyOn()};saveMeta();return renderNotify()}
+  if(!sub||perm!=='granted'){META.notify={on:true,lost:true,weekly:weeklyOn()};saveMeta();return renderNotify()}
+  if(META.notify.lost){META.notify={on:true,since:META.notify.since,weekly:weeklyOn()};saveMeta()}
+  await post('/subscribe',{endpoint:sub.endpoint,time:META.remind||'20:00',tz:tz(),weekly:weeklyOn()});
  }catch(e){errorLog.add('notify',e,'refresh')}
 }
 export async function testNow(){
@@ -97,8 +117,8 @@ export async function testNow(){
  }catch(e){errorLog.add('notify',e,'test');say('Could not show a test notification.',6000)}
 }
 
-const FINE_ON='The reminder server only learns your reminder time, your time zone and which days you have rated. It never receives ratings or notes.';
-const FINE_OFF='Turning this on sends your reminder time, time zone and which days you have rated to the small reminder server. Never your ratings or notes.';
+const FINE_ON='The reminder server only learns your reminder time, your time zone, which days you have rated and whether the Sunday weekly grade is on. It never receives ratings, grades or notes.';
+const FINE_OFF='Turning this on sends your reminder time, time zone, which days you have rated and your weekly grade choice to the small reminder server. Never your ratings, grades or notes.';
 export function renderNotify(){
  const st=$('#nStatus');if(!st)return;
  const sp=support(),on=!!(META.notify&&META.notify.on),btn=$('#nOn'),test=$('#nTest'),fine=$('#nFine'),dm=status.demo;
@@ -115,8 +135,10 @@ export function renderNotify(){
  const lost=on&&META.notify.lost;
  btn.hidden=!showBtn;btn.textContent=on&&!lost?'Turn off notifications':'Turn on notifications';btn.disabled=dm;
  test.hidden=!(sp.ok&&on&&!lost);test.disabled=dm;
+ const wk=$('#nWeeklyRow'),wc=$('#nWeekly');if(wk){wk.hidden=!(sp.ok&&on&&!lost);wc.checked=weeklyOn();wc.disabled=dm}
  fine.textContent=sp.ok?(on&&!lost?FINE_ON:FINE_OFF):'';
 }
 $('#nOn').onclick=()=>{const on=!!(META.notify&&META.notify.on&&!META.notify.lost);return on?disable():enable()};
 $('#nTest').onclick=testNow;
+if($('#nWeekly'))$('#nWeekly').onchange=e=>setWeekly(e.target.checked);
 syncPerm().then(renderNotify);
