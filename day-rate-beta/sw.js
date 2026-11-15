@@ -1,6 +1,6 @@
 importScripts('grades.js');
-const CACHE='dayrate-v32';
-const FILES=['./','index.html','styles.css','grades.js','insights.js','achievements.js','src/grade-ui.js','src/tags.js','src/util.js','src/state.js','src/nav.js','src/rate.js','src/result.js','src/history.js','src/trends.js','src/insights-ui.js','src/forecast.js','src/forecast-ui.js','src/celebrate.js','src/ach-ui.js','src/data.js','src/app.js','src/config.js','src/notify.js','src/demo.js','src/onboarding.js','src/review.js','src/review-ui.js','src/storage.js','src/migrate.js','src/errorlog.js','manifest.json','icon-192.png','icon-512.png','apple-touch-icon.png'];
+const CACHE='dayrate-v35';
+const FILES=['./','index.html','styles.css','grades.js','insights.js','achievements.js','src/grade-ui.js','src/tags.js','src/util.js','src/state.js','src/nav.js','src/rate.js','src/result.js','src/history.js','src/trends.js','src/insights-ui.js','src/forecast.js','src/forecast-ui.js','src/celebrate.js','src/ach-ui.js','src/data.js','src/app.js','src/config.js','src/notify.js','src/demo.js','src/onboarding.js','src/review.js','src/review-ui.js','src/experiments.js','src/calendar.js','src/calendar-ui.js','src/lock.js','src/lock-ui.js','src/storage.js','src/migrate.js','src/errorlog.js','manifest.json','icon-192.png','icon-512.png','apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.all(FILES.map(f=>c.add(new Request(f,{cache:'reload'}))))))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))))});
 self.addEventListener('message',e=>{if(e.data==='skip')self.skipWaiting()});

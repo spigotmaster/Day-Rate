@@ -6,6 +6,7 @@ import {addD,rng,w1} from './result.js';
 import {forecastStatsCard} from './forecast-ui.js';
 import {tagNames} from './tags.js';
 import {home} from './history.js';
+import {decide,pastLabel,rerun} from './experiments.js';
 
 /* insights UI: all numbers come from insights.js; this block only draws them */
 export let insTab='over',insPer=7;const insMore={obs:false,dis:false},INS_LIMIT=4;
@@ -125,7 +126,12 @@ export function expResultCard(x){
   x.rows.forEach(r=>[r[0],w1(r[1]),w1(r[2]),(r[3]>0?'+':r[3]<0?'\u2212':'')+w1(Math.abs(r[3]))].forEach(t=>g.appendChild(mkEl('span',r[4]?'pri':null,t))));c.appendChild(g)}
  x.cav.forEach(t=>c.appendChild(mkEl('p','fine',t)));
  c.appendChild(mkEl('div','meta',rng(x.start)+' to '+rng(addD(x.start,EXPLEN-1))));
- const b=mkEl('button','btn','Got it');b.onclick=()=>{x.new=false;saveMeta();renderInsights()};c.appendChild(b);
+ c.appendChild(mkEl('p','fine','What would you like to do with it? There is no right answer.'));
+ const pick=(txt,ch,fn)=>{const b=mkEl('button','btn',txt);b.type='button';b.onclick=()=>{META.expDone=decide(META.expDone,x.start,ch);if(fn)fn();saveMeta();renderInsights();$('#vins .pane').scrollTop=0};return b};
+ c.appendChild(pick('Keep doing it','keep',()=>{if(!META.exp)META.exp=rerun(x,today())}));
+ c.appendChild(pick('Change it','change'));
+ c.appendChild(pick('Drop it','drop'));
+ const later=mkEl('button','btn','Decide later');later.type='button';later.onclick=()=>{x.new=false;saveMeta();renderInsights()};c.appendChild(later);
  return c;
 }
 export function expCard(e){
@@ -209,7 +215,7 @@ export function renderInsights(){
   if(META.exp)body.appendChild(expActiveCard());
   r.act.filter(e=>!META.exp||e.id!==META.exp.id).forEach(e=>body.appendChild(expCard(e)));
   const past=(META.expDone||[]).filter(x=>!x.new).slice(0,5);
-  if(past.length)body.appendChild(mkEl('p','fine','Past experiments: '+past.map(x=>x.title+' ('+rng(x.start)+')').join(' \u00b7 ')));
+  if(past.length)body.appendChild(mkEl('p','fine','Past experiments: '+past.map(x=>pastLabel(x,rng(x.start))).join(' \u00b7 ')));
  }
 }
 

@@ -5,13 +5,14 @@ import {TAGLBL,renderTags,st,startRate} from './rate.js';
 import {momentCard,nextMile,sel,setSel,showToday} from './history.js';
 import {EXPLEN,expDay,expSync} from './insights-ui.js';
 import {expectCard} from './forecast-ui.js';
+import {onThisDay,relLabel} from './calendar.js';
 import {badge,catGrade,dayGrade,drawGoal,gpaOfEntries,gradeChange,spoken,topLine} from './grade-ui.js';
 
 /* result */
 export function remember(date){
  const [y,m,d]=date.split('-').map(Number);
- const ya=y-1+'-'+pad(m)+'-'+pad(d);
- if(E[ya])return ['This day last year',E[ya]];
+ const oy=onThisDay(E,date)[0];
+ if(oy)return [relLabel(oy.years),oy.e];
  const pm=m===1?[y-1,12]:[y,m-1];
  const dt=new Date(pm[0],pm[1]-1,d);
  if(dt.getMonth()===pm[1]-1){const k=ds(dt);if(E[k])return ['This day last month',E[k]]}

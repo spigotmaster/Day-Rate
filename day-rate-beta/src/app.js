@@ -13,6 +13,7 @@ import './review-ui.js';
 import {maybeOnboard} from './onboarding.js';
 import {refresh as refreshNotify} from './notify.js';
 import {startRate} from './rate.js';
+import {initLock} from './lock-ui.js';
 
 hooks.renderInsights=renderInsights;
 export let tipT=0;
@@ -54,6 +55,6 @@ addEventListener('hashchange',()=>{if(!weekLink())rateLink()});
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data==='rate')openRate();if(e.data==='week')weekLink()});
 errorLog.install(window);
 (async()=>{
- try{await initStore();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home();maybeOnboard();if(!weekLink())rateLink();refreshNotify()}
+ try{await initStore();initLock();try{requestPersistence()}catch(e){}if(status.readOnly)alert('This data was saved by a newer version of Day Rate. Update the app. Editing is switched off so nothing is lost.');home();maybeOnboard();if(!weekLink())rateLink();refreshNotify()}
  catch(e){errorLog.add('boot',e);alert('Day Rate could not load your data, so nothing was changed. Close and reopen the app. If this repeats, use Data > Copy debug info.')}
 })();

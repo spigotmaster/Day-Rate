@@ -63,11 +63,12 @@
   <div class="hist">
    <h1>History</h1>
    <p class="sum" id="sum"></p>
-   <div class="seg" id="hmode" role="group" aria-label="History view"><button data-m="wk" class="on" aria-pressed="true">Weeks</button><button data-m="yr" aria-pressed="false">Year</button><button data-m="rc" aria-pressed="false">Recap</button><button data-m="sr" aria-pressed="false">Search</button></div>
+   <div class="seg" id="hmode" role="group" aria-label="History view"><button data-m="wk" class="on" aria-pressed="true">Weeks</button><button data-m="mo" aria-pressed="false">Month</button><button data-m="yr" aria-pressed="false">Year</button><button data-m="rc" aria-pressed="false">Recap</button><button data-m="sr" aria-pressed="false">Search</button></div>
    <div class="wk7" id="wk7"></div>
    <div id="wkrecap"></div>
    <div class="gw" id="gw"><div class="grid" id="grid"></div></div>
    <div id="yrw" hidden><svg class="yr" id="yr" viewBox="0 0 640 104" role="img" aria-label="Year view. Each square is one day, coloured by score. Tap a square to open that day."></svg><div class="ylg" id="ylg"></div><p class="sum" id="yrsum"></p></div>
+   <div id="mow" hidden></div>
    <div id="rcw" hidden></div>
    <div id="srw" hidden></div>
    <p class="legend" id="hleg">Colored: rated. Outline: not rated yet. Tap any day.</p>
@@ -101,6 +102,7 @@
   <p class="sum" id="demoNote" hidden>Sample data is showing, so export and import are switched off. Exit the sample to use them.</p>
   <div class="card"><h2>Export</h2><p id="lastbk"></p><button class="btn" id="xcsv">Export CSV</button><button class="btn" id="xjson">Backup file</button><button class="btn" id="xcopy">Copy backup text</button></div>
   <div class="card"><h2>Intro</h2><p>The short tour of how Day Rate works, plus sample data you can look around in without touching your own days.</p><button class="btn" id="onbAgain" type="button">Show intro</button></div>
+  <div class="card" id="lockSet"><h2>Privacy lock</h2><p id="lkStatus" aria-live="polite"></p><form id="lkForm" autocomplete="off"><label class="row2 lkrow" id="lkCurRow" hidden>Current PIN <input id="lkCur" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><label class="row2 lkrow">New PIN <input id="lkNew" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><label class="row2 lkrow">Repeat new PIN <input id="lkNew2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><button class="btn" id="lkSet" type="submit">Set PIN</button><button class="btn" id="lkOff" type="button" hidden>Turn off lock</button></form><p class="fine" id="lkMsg" role="status"></p><p class="fine">A PIN is 4 to 6 digits. This keeps casual eyes out. It does not encrypt your days, and backup and export files are not locked. If you forget the PIN you can reset the lock from the lock screen and your days are kept.</p></div>
   <div class="card"><h2>Troubleshooting</h2><p>If something looks wrong, copy this and send it to whoever is helping you. It holds counts and error messages only, never your ratings or notes.</p><button class="btn" id="xdbg">Copy debug info</button><button class="btn" id="xdbgclr">Clear error log</button></div>
   <div class="card"><h2>Restore</h2><p>Importing replaces everything on this device.</p><button class="btn" id="ximp">Import backup</button><button class="btn" id="xundo" hidden>Undo last import</button><input type="file" id="file" accept=".json,application/json" hidden></div>
   <div class="card"><h2>How scoring works</h2><p>Mood, Productivity and Connection are each scored 0 to 5 against your own history. Your highest rating ever in a category earns 5, your lowest earns 0. The three add up to a score out of 15. Past scores shift as your range grows. With one day or identical ratings, each category gets a neutral 2.5.</p></div>
@@ -140,6 +142,16 @@
    <p class="celM" id="celM"></p>
    <button class="btn cta" id="celOk">Nice!</button>
   </div>
+ </div>
+</div>
+<div id="pgate" role="dialog" aria-modal="true" aria-labelledby="lockT" hidden>
+ <div class="lockbrand" id="lockBrand" aria-hidden="true">Day Rate</div>
+ <div class="lockcard">
+  <h2 id="lockT">Day Rate is locked</h2>
+  <form id="lockForm" autocomplete="off"><input id="lockPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" aria-label="PIN"><button class="btn cta" id="lockGo" type="submit">Unlock</button></form>
+  <p id="lockMsg" role="status" aria-live="polite"></p>
+  <button class="btn" id="lockForgot" type="button">Forgot PIN?</button>
+  <div id="lockAsk" hidden><p>Reset the lock? Your days are not deleted. The PIN is removed, so anyone holding this phone could open the app. You can set a new PIN in Data.</p><button class="btn" id="lockKeep" type="button">Keep the lock</button><button class="btn" id="lockReset" type="button">Yes, reset the lock</button></div>
  </div>
 </div>
 <label id="hap" style="position:absolute;opacity:0;pointer-events:none;left:-99px"><input type="checkbox" switch></label>

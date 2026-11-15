@@ -6,6 +6,7 @@ import {GOAL_LETTERS,avgInfo,goalSuggestion,gradesOn,suggestText} from './grade-
 import {CID,MAX_LEN,TAGS,addCustomTag,customTags,removeCustomTag,renameCustomTag,usesOf} from './tags.js';
 import {ac,celebrate,tone} from './celebrate.js';
 import {achSync} from './ach-ui.js';
+import {renderLock} from './lock-ui.js';
 
 /* data: export, backup, import */
 export const canonOf=m=>JSON.stringify(Object.keys(m).sort().map(k=>{const a=[k,m[k].m,m[k].p,m[k].c,m[k].note||''],g=m[k].tags;if(g&&g.length)a.push(g.join(','));return a}));
@@ -112,7 +113,7 @@ export function renderData(){
  $('#rtime').value=META.remind||'20:00';renderNotify();
  $('#hapt').checked=META.haptics;
  $('#gron').checked=META.grades!==false;
- renderCustomTags();renderGoal();
+ renderCustomTags();renderGoal();renderLock();
  $('#bday').value=META.bday?'2000-'+META.bday:'';
  $('#snd').checked=META.sound!==false;
  $('#xundo').hidden=!ls('dayrate:snap');

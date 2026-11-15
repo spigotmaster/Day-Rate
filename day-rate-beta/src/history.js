@@ -6,6 +6,7 @@ import {addD,dayLines,delControl,fillRings,monOf,renderWeek,showResult} from './
 import {badge,catGrade,dayGrade,gpaOfEntries,gpaText,spoken} from './grade-ui.js';
 import {insData} from './insights-ui.js';
 import {renderRecap,renderSearch} from './review-ui.js';
+import {renderMonth,showMonthFor} from './calendar-ui.js';
 
 export let histMode='wk',YG=null;
 export function markYear(){const r=$('#yr');if(r)r.querySelectorAll('rect').forEach(x=>x.classList.toggle('ysel',x.dataset.d===sel))}
@@ -25,9 +26,11 @@ export function renderYear(){
 }
 export function applyMode(){
  [...$('#hmode').children].forEach(b=>{const on=b.dataset.m===histMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
- const dayView=histMode==='wk'||histMode==='yr';
+ const dayView=histMode==='wk'||histMode==='yr',mo=histMode==='mo';
  $('#gw').hidden=histMode!=='wk';$('#yrw').hidden=histMode!=='yr';
- ['wk7','wkrecap','hleg','det'].forEach(id=>{$('#'+id).hidden=!dayView});
+ ['wk7','wkrecap'].forEach(id=>{$('#'+id).hidden=!dayView});
+ ['hleg','det'].forEach(id=>{$('#'+id).hidden=!(dayView||mo)});
+ $('#mow').hidden=!mo;if(mo)renderMonth();
  $('#rcw').hidden=histMode!=='rc';$('#srw').hidden=histMode!=='sr';
  if(histMode==='yr')renderYear();
  if(histMode==='rc')renderRecap();
@@ -87,7 +90,7 @@ export function renderHist(){
   else if(E[k]){b.style.background='rgb('+col(tOf(H(E[k])))+')';b.style.borderColor='transparent';const gd=dayGrade(E[k]);b.setAttribute('aria-label',label(k)+', score '+fmt(H(E[k]))+(gd?', grade '+spoken(gd.l):''))}
   else b.setAttribute('aria-label',label(k)+', not rated');
   if(k===(sel||t))b.classList.add('sel');
-  b.onclick=()=>{sel=k;const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();markYear();b.scrollIntoView({inline:'nearest',block:'nearest'})};
+  b.onclick=()=>{sel=k;if(histMode==='mo')showMonthFor(k);const o=g.querySelector('.sel');if(o)o.classList.remove('sel');b.classList.add('sel');renderDet(k,t);renderWeek();markYear();b.scrollIntoView({inline:'nearest',block:'nearest'})};
   g.appendChild(b);
  }
  const hs=keys.map(k=>H(E[k]));
